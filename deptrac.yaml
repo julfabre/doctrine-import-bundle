@@ -5,9 +5,18 @@ deptrac:
     exclude_files:
         - '#.*Test\.php$#'
     layers:
+        - name: Diagnostic
+          collectors:
+              - { type: classLike, value: '^Juf\\DoctrineImportBundle\\Diagnostic\\.*' }
+        - name: Exception
+          collectors:
+              - { type: classLike, value: '^Juf\\DoctrineImportBundle\\Exception\\.*' }
         - name: Schema
           collectors:
-              - { type: classLike, value: '^Juf\\DoctrineImportBundle\\Schema\\.*' }
+              - { type: classLike, value: '^Juf\\DoctrineImportBundle\\Schema\\[^\\]+$' }
+        - name: SchemaDbal
+          collectors:
+              - { type: classLike, value: '^Juf\\DoctrineImportBundle\\Schema\\Dbal\\.*' }
         - name: Analysis
           collectors:
               - { type: classLike, value: '^Juf\\DoctrineImportBundle\\Analysis\\.*' }
@@ -42,11 +51,14 @@ deptrac:
           collectors:
               - { type: classLike, value: '^Nette\\PhpGenerator\\.*' }
     ruleset:
-        Definition: ~
-        Schema: [Dbal, Orm]
-        Analysis: [Schema, Definition]
+        Diagnostic: ~
+        Exception: ~
+        Definition: [Diagnostic]
+        Schema: [Diagnostic]
+        SchemaDbal: [Schema, Diagnostic, Exception, Dbal]
+        Analysis: [Schema, Definition, Diagnostic]
         Rendering: [Definition, PhpGenerator]
         Writer: [Rendering]
-        Application: [Schema, Analysis, Definition, Rendering, Writer]
-        Command: [Application, Symfony, Orm, Definition]
+        Application: [Schema, SchemaDbal, Analysis, Definition, Rendering, Writer, Diagnostic, Exception]
+        Command: [Application, Symfony, Orm, Definition, Diagnostic, Exception]
         Bundle: [Command, Symfony]
