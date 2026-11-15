@@ -46,10 +46,8 @@ jobs:
             fail-fast: false
             matrix:
                 include:
-                    # Oldest supported stack: SF 6.4, DBAL 3.8, ORM 2.17.
+                    # Oldest supported stack: PHP 8.2, Symfony 6.4, lowest Doctrine versions.
                     - { label: lowest, php: '8.2', symfony: '6.4.*', dependencies: lowest }
-                    # Legacy applications already on DBAL 4 / ORM 3.
-                    - { label: legacy, php: '8.2', symfony: '6.4.*', dependencies: highest, extra: 'doctrine/dbal:^4.0 doctrine/orm:^3.0' }
                     - { label: lts, php: '8.3', symfony: '7.4.*', dependencies: highest }
                     - { label: latest, php: '8.4', symfony: '8.*', dependencies: highest }
                     - { label: next, php: '8.5', symfony: '', dependencies: highest }
@@ -64,13 +62,66 @@ jobs:
                   coverage: none
                   tools: composer:v2, flex
 
-            - name: Pin extra dependencies
-              if: ${{ matrix.extra }}
-              run: composer require --dev --no-update ${{ matrix.extra }}
-
             - uses: ramsey/composer-install@v3
               with:
                   dependency-versions: ${{ matrix.dependencies }}
 
             - name: Run tests
               run: composer test
+
+    integration:
+        name: Integration (${{ matrix.platform }}, ${{ matrix.dependencies }})
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                platform: [postgresql, mysql, mariadb]
+                dependencies: [lowest, highest]
+        services:
+            postgresql:
+                image: ${{ matrix.platform == 'postgresql' && 'postgres:17' || '' }}
+                env:
+                    POSTGRES_USER: db
+                    POSTGRES_PASSWORD: db
+                    POSTGRES_DB: db
+                ports: ['5432:5432']
+                options: --health-cmd "pg_isready -U db" --health-interval 3s --health-timeout 5s --health-retries 30
+            mysql:
+                image: ${{ matrix.platform == 'mysql' && 'mysql:8.4' || '' }}
+                env:
+                    MYSQL_ROOT_PASSWORD: root
+                    MYSQL_DATABASE: db
+                    MYSQL_USER: db
+                    MYSQL_PASSWORD: db
+                ports: ['3306:3306']
+                options: --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -proot" --health-interval 3s --health-timeout 5s --health-retries 30
+            mariadb:
+                image: ${{ matrix.platform == 'mariadb' && 'mariadb:11.4' || '' }}
+                env:
+                    MARIADB_ROOT_PASSWORD: root
+                    MARIADB_DATABASE: db
+                    MARIADB_USER: db
+                    MARIADB_PASSWORD: db
+                ports: ['3307:3306']
+                options: --health-cmd "healthcheck.sh --connect --innodb_initialized" --health-interval 3s --health-timeout 5s --health-retries 30
+        env:
+            SYMFONY_REQUIRE: '6.4.*'
+            DATABASE_URL_POSTGRESQL: ${{ matrix.platform == 'postgresql' && 'pgsql://db:db@127.0.0.1:5432/db?serverVersion=17&charset=utf8' || '' }}
+            DATABASE_URL_MYSQL: ${{ matrix.platform == 'mysql' && 'mysql://db:db@127.0.0.1:3306/db?serverVersion=8.4.0&charset=utf8mb4' || '' }}
+            DATABASE_URL_MARIADB: ${{ matrix.platform == 'mariadb' && 'mysql://db:db@127.0.0.1:3307/db?serverVersion=11.4.0-MariaDB&charset=utf8mb4' || '' }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: shivammathur/setup-php@v2
+              with:
+                  php-version: '8.2'
+                  coverage: none
+                  extensions: pdo_pgsql, pdo_mysql, pdo_sqlite
+                  tools: composer:v2, flex
+
+            - uses: ramsey/composer-install@v3
+              with:
+                  dependency-versions: ${{ matrix.dependencies }}
+
+            - name: Run integration tests
+              run: vendor/bin/phpunit --testsuite integration
