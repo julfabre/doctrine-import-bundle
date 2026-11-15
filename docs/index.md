@@ -94,13 +94,15 @@ guessed code.
 
 | Code | Severity | Meaning |
 |---|---|---|
+| `table.unreadable` | error | A column type is unknown to Doctrine DBAL (geometry, PostgreSQL enum…): the table is skipped. Map the type with `doctrine.dbal.mapping_types`, or exclude the table |
 | `table.no_primary_key` | error | Doctrine needs an identifier: the table is skipped |
 | `naming.invalid_identifier` | error | Name with characters other than `[A-Za-z0-9_]`: the table is skipped |
 | `column.unsupported_type` | error | Type unknown to the bundle: the column is skipped |
 | `naming.class_collision` | warning / error | Two tables give the same class name |
 | `naming.reserved_word`, `naming.leading_digit` | warning | Class name adjusted to be valid PHP |
 | `naming.property_collision` | warning | Association renamed to avoid an existing property |
-| `column.default_expression` | warning | SQL expression default (`CURRENT_TIMESTAMP`) not mapped |
+| `column.default_expression` | warning | SQL expression default (`now()`, function call) not mapped. `CURRENT_TIMESTAMP`, `CURRENT_DATE` and `CURRENT_TIME` are mapped |
+| `relation.on_update_not_mapped` | warning | `ON UPDATE` action of a foreign key: Doctrine cannot map it |
 | `relation.composite_foreign_key` | warning | Composite foreign key kept as scalar fields |
 | `relation.non_primary_key_target` | warning | Foreign key to a non-primary-key column, unsupported by Doctrine |
 | `relation.foreign_key_in_primary_key` | warning | Derived identity, not mapped as an association yet |
@@ -110,6 +112,20 @@ guessed code.
 | `relation.one_to_one_as_many_to_one` | info | Unique foreign key mapped as `ManyToOne` |
 | `column.enum_as_string`, `column.binary_as_mixed` | info | Type mapped approximately |
 | `naming.table_prefix_detected` | info | Every table shares a known prefix: configure it |
+
+## Known limitations
+
+- **Associations**: only single-column foreign keys to a primary key become associations, as `ManyToOne` /
+  `OneToMany`. One-to-one, many-to-many join tables, composite foreign keys and derived identities are
+  kept as scalar fields and reported.
+- **`ON UPDATE` actions** of foreign keys cannot be expressed with Doctrine: they are lost if the schema is
+  later created from the entities.
+- **Enums**: MySQL `ENUM` columns become `string` (the allowed values are not kept); `SET` columns become
+  `simple_array`. PHP enums are planned.
+- **Charsets and collations** of columns are not mapped.
+- **MySQL `YEAR`** is read by Doctrine DBAL as a `date` column: map or exclude it before generating.
+- **Views** are not generated.
+- **Mapping formats**: attributes only. XML is planned.
 
 ## Contributing
 
