@@ -6,6 +6,7 @@ namespace Juf\DoctrineImportBundle\Tests\Functional\App;
 
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Juf\DoctrineImportBundle\JufDoctrineImportBundle;
+use Psr\Log\NullLogger;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -66,6 +67,9 @@ final class TestKernel extends Kernel
                 ],
             ],
         ]);
+
+        // The default logger writes every SQL query to stderr: keep the test output readable.
+        $container->services()->set('logger', NullLogger::class);
 
         $container->extension('juf_doctrine_import', [
             'entity_manager' => 'default',

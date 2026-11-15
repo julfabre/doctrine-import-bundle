@@ -65,6 +65,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Command\LazyCommand;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\HttpKernel\KernelInterface;
 
 #[CoversClass(GenerateEntitiesFromDatabaseCommand::class)]
 #[UsesClass(JufDoctrineImportBundle::class)]
@@ -121,10 +122,12 @@ final class GenerateEntitiesFromDatabaseCommandTest extends KernelTestCase
 
     private string $outputDirectory;
 
+    private KernelInterface $testKernel;
+
     protected function setUp(): void
     {
-        $kernel = self::bootKernel();
-        $this->outputDirectory = $kernel->getCacheDir().'/generated';
+        $this->testKernel = self::bootKernel();
+        $this->outputDirectory = $this->testKernel->getCacheDir().'/generated';
         (new Filesystem())->remove($this->outputDirectory);
     }
 
@@ -149,7 +152,7 @@ final class GenerateEntitiesFromDatabaseCommandTest extends KernelTestCase
     {
         $this->givenBlogTables($this->connection());
 
-        $tester = $this->runCommand([]);
+        $tester = $this->executeCommand([]);
 
         self::assertSame(Command::SUCCESS, $tester->getStatusCode());
         self::assertFileExists($this->outputDirectory.'/Entity/Author.php');
@@ -168,7 +171,7 @@ final class GenerateEntitiesFromDatabaseCommandTest extends KernelTestCase
         $connection->executeStatement('CREATE TABLE app_customer_archive (id INTEGER NOT NULL PRIMARY KEY)');
         $connection->executeStatement('CREATE TABLE other (id INTEGER NOT NULL PRIMARY KEY)');
 
-        $tester = $this->runCommand([
+        $tester = $this->executeCommand([
             '--table' => ['app_*'],
             '--exclude' => ['*_archive'],
             '--table-prefix' => ['app_'],
@@ -189,7 +192,7 @@ final class GenerateEntitiesFromDatabaseCommandTest extends KernelTestCase
     {
         $this->givenBlogTables($this->connection());
 
-        $tester = $this->runCommand(['--dry-run' => true]);
+        $tester = $this->executeCommand(['--dry-run' => true]);
 
         self::assertSame(Command::SUCCESS, $tester->getStatusCode());
         self::assertDirectoryDoesNotExist($this->outputDirectory);
@@ -201,14 +204,14 @@ final class GenerateEntitiesFromDatabaseCommandTest extends KernelTestCase
     public function it_keeps_existing_files_unless_forced(): void
     {
         $this->givenBlogTables($this->connection());
-        $this->runCommand([]);
+        $this->executeCommand([]);
         file_put_contents($this->outputDirectory.'/Entity/Post.php', "<?php // edited by hand\n");
 
-        $kept = $this->runCommand([]);
+        $kept = $this->executeCommand([]);
         self::assertSame("<?php // edited by hand\n", file_get_contents($this->outputDirectory.'/Entity/Post.php'));
         self::assertMatchesRegularExpression('#Entity/Post\.php\s+skipped \(exists, use --force\)#', $kept->getDisplay());
 
-        $forced = $this->runCommand(['--force' => true]);
+        $forced = $this->executeCommand(['--force' => true]);
         self::assertStringContainsString('class Post', (string) file_get_contents($this->outputDirectory.'/Entity/Post.php'));
         self::assertMatchesRegularExpression('#Entity/Post\.php\s+overwritten#', $forced->getDisplay());
     }
@@ -220,7 +223,7 @@ final class GenerateEntitiesFromDatabaseCommandTest extends KernelTestCase
         $connection->executeStatement('CREATE TABLE post (id INTEGER NOT NULL PRIMARY KEY, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)');
         $connection->executeStatement('CREATE TABLE audit_log (message TEXT)');
 
-        $display = $this->runCommand([])->getDisplay();
+        $display = $this->executeCommand([])->getDisplay();
 
         $error = strpos($display, 'table.no_primary_key');
         $warning = strpos($display, 'column.default_expression');
@@ -234,7 +237,7 @@ final class GenerateEntitiesFromDatabaseCommandTest extends KernelTestCase
     {
         $this->connection()->executeStatement('CREATE TABLE audit_log (message TEXT)');
 
-        $tester = $this->runCommand([]);
+        $tester = $this->executeCommand([]);
 
         self::assertSame(Command::FAILURE, $tester->getStatusCode());
         self::assertStringContainsString('Generation incomplete: 1 error(s), 0 warning(s).', $tester->getDisplay());
@@ -245,7 +248,7 @@ final class GenerateEntitiesFromDatabaseCommandTest extends KernelTestCase
     {
         $this->connection('legacy')->executeStatement('CREATE TABLE invoice (id INTEGER NOT NULL PRIMARY KEY)');
 
-        $tester = $this->runCommand(['--em' => 'legacy']);
+        $tester = $this->executeCommand(['--em' => 'legacy']);
 
         self::assertSame(Command::SUCCESS, $tester->getStatusCode());
         self::assertSame(['Invoice.php'], $this->fileNames($this->outputDirectory.'/Entity'));
@@ -273,7 +276,7 @@ final class GenerateEntitiesFromDatabaseCommandTest extends KernelTestCase
     /**
      * @param array<string, mixed> $options
      */
-    private function runCommand(array $options): CommandTester
+    private function executeCommand(array $options): CommandTester
     {
         $tester = new CommandTester($this->findCommand());
         $tester->execute($options);
@@ -283,7 +286,7 @@ final class GenerateEntitiesFromDatabaseCommandTest extends KernelTestCase
 
     private function findCommand(): Command
     {
-        return (new Application(self::$kernel))->find(self::COMMAND_NAME);
+        return (new Application($this->testKernel))->find(self::COMMAND_NAME);
     }
 
     private function connection(string $name = 'default'): Connection
