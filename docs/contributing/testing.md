@@ -28,7 +28,7 @@ A test is never changed to make it pass without explaining why in the pull reque
 | Suite | Directory | Scope |
 |---|---|---|
 | Unit | `tests/Unit` | Pure code: naming, type mapping, analysis, rendering. No database, no kernel |
-| Integration | `tests/Integration` | Schema reading on real databases: SQLite locally, MySQL, MariaDB and PostgreSQL in CI |
+| Integration | `tests/Integration` | Schema reading on real databases. SQLite always runs; PostgreSQL, MySQL and MariaDB run when `DATABASE_URL_POSTGRESQL`, `DATABASE_URL_MYSQL` or `DATABASE_URL_MARIADB` is set, and are skipped otherwise |
 | Functional | `tests/Functional` | Test kernel and console command |
 
 Two kinds of tests deserve a specific mention:
