@@ -220,7 +220,7 @@ final class GenerateEntitiesFromDatabaseCommandTest extends KernelTestCase
     public function it_reports_diagnostics_grouped_by_severity(): void
     {
         $connection = $this->connection();
-        $connection->executeStatement('CREATE TABLE post (id INTEGER NOT NULL PRIMARY KEY, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)');
+        $connection->executeStatement("CREATE TABLE post (id INTEGER NOT NULL PRIMARY KEY, created_at DATETIME DEFAULT (datetime('now')))");
         $connection->executeStatement('CREATE TABLE audit_log (message TEXT)');
 
         $display = $this->executeCommand([])->getDisplay();

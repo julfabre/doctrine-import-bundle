@@ -6,6 +6,7 @@ namespace Juf\DoctrineImportBundle\Tests\Integration\Schema\Fixture;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Column;
+use Doctrine\DBAL\Schema\DefaultExpression\CurrentTimestamp;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint\ReferentialAction;
 use Doctrine\DBAL\Schema\Index;
@@ -58,6 +59,7 @@ final class BlogSchemaFixture
                 Column::editor()->setUnquotedName('price')->setTypeName(Types::DECIMAL)->setPrecision(10)->setScale(2)->setNotNull(false)->create(),
                 Column::editor()->setUnquotedName('is_featured')->setTypeName(Types::BOOLEAN)->create(),
                 Column::editor()->setUnquotedName('published_at')->setTypeName(Types::DATETIME_IMMUTABLE)->setNotNull(false)->create(),
+                Column::editor()->setUnquotedName('created_at')->setTypeName(Types::DATETIME_IMMUTABLE)->setDefaultValue(new CurrentTimestamp())->create(),
             )
             ->setPrimaryKeyConstraint(PrimaryKeyConstraint::editor()->setUnquotedColumnNames('id')->create())
             ->setIndexes(Index::editor()->setUnquotedName('idx_post_author')->setUnquotedColumnNames('author_id'))

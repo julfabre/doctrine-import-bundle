@@ -70,6 +70,11 @@ final readonly class RelationAnalyzer
             $diagnostics->report(Severity::Info, 'relation.one_to_one_as_many_to_one', \sprintf('Column "%s.%s" is a unique foreign key: it is mapped as ManyToOne, OneToOne is not generated yet.', $table->name, $column), $table->name, $column);
         }
 
+        // Doctrine maps ON DELETE on the join column, but has no equivalent for ON UPDATE.
+        if (!\in_array($foreignKey->onUpdate, ['NO ACTION', 'RESTRICT'], true)) {
+            $diagnostics->report(Severity::Warning, 'relation.on_update_not_mapped', \sprintf('Column "%s.%s" has ON UPDATE %s, which Doctrine cannot map: it is lost if the schema is created from the entities.', $table->name, $column, $foreignKey->onUpdate), $table->name, $column);
+        }
+
         $propertyName = $this->propertyName($table, $entity, $column, $relations, $diagnostics);
         $inversedBy = $this->inverseName($table, $entity, $propertyName, $foreignKey->foreignTable);
         [$referencedColumn] = $foreignKey->foreignColumns;

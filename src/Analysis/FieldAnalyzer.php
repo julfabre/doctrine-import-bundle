@@ -21,6 +21,9 @@ final readonly class FieldAnalyzer
     /** SQL expressions cannot be mapped as a default value: only literals are kept. */
     private const EXPRESSION_DEFAULT = '/\\(|^(CURRENT_(TIMESTAMP|DATE|TIME)|LOCALTIMESTAMP|LOCALTIME)$/i';
 
+    /** Mapped by DBAL to the right SQL on every platform. */
+    private const STANDARD_DATE_EXPRESSIONS = ['CURRENT_TIMESTAMP', 'CURRENT_DATE', 'CURRENT_TIME'];
+
     public function __construct(
         private NamingStrategyInterface $naming,
         private TypeMapper $types,
@@ -53,7 +56,7 @@ final readonly class FieldAnalyzer
                 $column->type->scale,
                 $column->type->unsigned,
                 $column->type->fixed,
-                $this->literalDefault($table, $column, $diagnostics),
+                $this->defaultValue($table, $column, $mapped, $diagnostics),
                 $column->comment,
             ),
         );
@@ -68,9 +71,22 @@ final readonly class FieldAnalyzer
         return [$column->name] === $table->primaryKey && $column->autoincrement ? IdGeneration::Identity : IdGeneration::None;
     }
 
-    private function literalDefault(TableMetadata $table, ColumnMetadata $column, DiagnosticCollector $diagnostics): ?string
+    /**
+     * Keeps literals and the date expressions every platform supports; reports any other SQL expression.
+     */
+    private function defaultValue(TableMetadata $table, ColumnMetadata $column, MappedType $mapped, DiagnosticCollector $diagnostics): ?string
     {
-        if (null === $column->default || 1 !== preg_match(self::EXPRESSION_DEFAULT, $column->default)) {
+        if (null === $column->default) {
+            return null;
+        }
+
+        // MariaDB reports "current_timestamp()": the standard keyword is kept.
+        $keyword = strtoupper(preg_replace('/\(\)$/', '', $column->default) ?? $column->default);
+        if ('\DateTimeImmutable' === $mapped->phpType && \in_array($keyword, self::STANDARD_DATE_EXPRESSIONS, true)) {
+            return $keyword;
+        }
+
+        if (1 !== preg_match(self::EXPRESSION_DEFAULT, $column->default)) {
             return $column->default;
         }
 

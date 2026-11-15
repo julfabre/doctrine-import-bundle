@@ -74,6 +74,11 @@ final class TableMetadataFactory
                     $index->getIndexedColumns(),
                 ),
                 IndexType::UNIQUE === $index->getType(),
+                match ($index->getType()) {
+                    IndexType::FULLTEXT => ['fulltext'],
+                    IndexType::SPATIAL => ['spatial'],
+                    default => [],
+                },
             ),
             array_values($table->getIndexes()),
         );

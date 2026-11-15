@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Juf\DoctrineImportBundle\Tests\Integration\Schema;
 
+use Juf\DoctrineImportBundle\Diagnostic\Diagnostic;
 use Juf\DoctrineImportBundle\Schema\ColumnMetadata;
 use Juf\DoctrineImportBundle\Schema\ColumnType;
 use Juf\DoctrineImportBundle\Schema\Dbal\DbalSchemaReader;
@@ -23,6 +24,7 @@ use PHPUnit\Framework\Attributes\UsesClass;
 #[UsesClass(TableMetadata::class)]
 #[UsesClass(ColumnMetadata::class)]
 #[UsesClass(IndexMetadata::class)]
+#[UsesClass(Diagnostic::class)]
 #[UsesClass(ColumnType::class)]
 #[UsesClass(PlatformNameResolver::class)]
 #[UsesClass(TableMetadataFactory::class)]
@@ -55,5 +57,37 @@ final class MySqlSchemaReaderTest extends DatabaseTestCase
                 $tables[0]->columns ?? [],
             ), 1, 0),
         );
+    }
+
+    #[Test]
+    #[DataProvider('mySqlPlatforms')]
+    public function it_skips_a_table_with_an_unknown_column_type_and_reports_it(string $platform): void
+    {
+        $connection = $this->connect($platform);
+        $connection->executeStatement('CREATE TABLE address (id INT NOT NULL PRIMARY KEY, location GEOMETRY NOT NULL)');
+        $connection->executeStatement('CREATE TABLE city (id INT NOT NULL PRIMARY KEY)');
+
+        $schema = (new DbalSchemaReader($connection))->read(new TableFilter());
+
+        self::assertSame(['city'], array_map(static fn (TableMetadata $table): string => $table->name, $schema->tables));
+        self::assertSame(
+            [['table.unreadable', 'address']],
+            array_map(static fn (Diagnostic $diagnostic): array => [$diagnostic->code, $diagnostic->table], $schema->diagnostics),
+        );
+    }
+
+    #[Test]
+    #[DataProvider('mySqlPlatforms')]
+    public function it_reads_the_flags_of_fulltext_indexes(string $platform): void
+    {
+        $connection = $this->connect($platform);
+        $connection->executeStatement('CREATE TABLE film_text (id INT NOT NULL PRIMARY KEY, title VARCHAR(255) NOT NULL, FULLTEXT KEY idx_title (title), KEY idx_id_title (id, title))');
+
+        $indexes = (new DbalSchemaReader($connection))->read(new TableFilter())->tables[0]->indexes ?? [];
+
+        self::assertEquals([
+            new IndexMetadata('idx_id_title', ['id', 'title'], unique: false),
+            new IndexMetadata('idx_title', ['title'], unique: false, flags: ['fulltext']),
+        ], $indexes);
     }
 }
