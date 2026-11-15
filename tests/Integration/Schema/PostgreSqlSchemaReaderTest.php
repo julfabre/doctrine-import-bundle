@@ -58,7 +58,7 @@ final class PostgreSqlSchemaReaderTest extends DatabaseTestCase
         $connection->executeStatement('CREATE TABLE person (id INT PRIMARY KEY, current_mood mood)');
 
         $this->expectException(SchemaReadingException::class);
-        $this->expectExceptionMessageMatches('/"person".*"mood".*mapping_types/s');
+        $this->expectExceptionMessageMatches('/^Cannot read table "person": Unknown database type "mood" requested, .+\. If the table uses a database type unknown to Doctrine DBAL, map it with the "doctrine\.dbal\.mapping_types" configuration, or exclude the table\.$/');
 
         (new DbalSchemaReader($connection))->read(new TableFilter());
     }
