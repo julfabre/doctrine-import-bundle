@@ -28,7 +28,7 @@ return RectorConfig::configure()
         __DIR__.'/tests/Fixtures',
         PreferPHPUnitThisCallRector::class,
         // The rendering layer names the classes of the generated code: they are not runtime dependencies of the bundle.
-        StringClassNameToClassConstantRector::class => [__DIR__.'/src/Rendering', __DIR__.'/tests/Unit/Rendering', __DIR__.'/tests/Integration/Rendering'],
+        StringClassNameToClassConstantRector::class => [__DIR__.'/src/Rendering', __DIR__.'/tests'],
     ])
     ->withImportNames(importShortClasses: false, removeUnusedImports: true)
 ;

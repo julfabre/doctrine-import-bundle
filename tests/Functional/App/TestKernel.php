@@ -6,6 +6,7 @@ namespace Juf\DoctrineImportBundle\Tests\Functional\App;
 
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use Juf\DoctrineImportBundle\JufDoctrineImportBundle;
+use Psr\Log\NullLogger;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -51,7 +52,29 @@ final class TestKernel extends Kernel
         ]);
 
         $container->extension('doctrine', [
-            'dbal' => ['url' => 'sqlite:///:memory:'],
+            'dbal' => [
+                'default_connection' => 'default',
+                'connections' => [
+                    'default' => ['url' => 'sqlite:///:memory:'],
+                    'legacy' => ['url' => 'sqlite:///:memory:'],
+                ],
+            ],
+            'orm' => [
+                'default_entity_manager' => 'default',
+                'entity_managers' => [
+                    'default' => ['connection' => 'default'],
+                    'legacy' => ['connection' => 'legacy'],
+                ],
+            ],
+        ]);
+
+        // The default logger writes every SQL query to stderr: keep the test output readable.
+        $container->services()->set('logger', NullLogger::class);
+
+        $container->extension('juf_doctrine_import', [
+            'entity_manager' => 'default',
+            'entity' => ['dir' => '%kernel.cache_dir%/generated/Entity'],
+            'repository' => ['dir' => '%kernel.cache_dir%/generated/Repository'],
         ]);
     }
 
