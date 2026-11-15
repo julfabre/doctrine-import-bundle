@@ -46,18 +46,29 @@ final class DoctrineMappingTest extends TestCase
             require_once $path;
         }
 
-        $configuration = new Configuration();
-        $configuration->setMetadataDriverImpl(new AttributeDriver([$this->directory.'/Entity']));
-        $configuration->setProxyDir($this->directory.'/Proxy');
-        $configuration->setProxyNamespace('JufGeneratedProxies');
-        if (\PHP_VERSION_ID >= 80400) {
-            $configuration->enableNativeLazyObjects(true);
-        }
-
+        $configuration = $this->configuration();
         $entityManager = new EntityManager(DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true], $configuration), $configuration);
 
         self::assertCount(4, $entityManager->getMetadataFactory()->getAllMetadata());
         self::assertSame([], (new SchemaValidator($entityManager))->validateMapping());
+    }
+
+    private function configuration(): Configuration
+    {
+        $configuration = new Configuration();
+        $configuration->setMetadataDriverImpl(new AttributeDriver([$this->directory.'/Entity']));
+
+        // PHP 8.4+ lazy objects replace the generated proxies, whose configuration is then deprecated.
+        if (\PHP_VERSION_ID >= 80400) {
+            $configuration->enableNativeLazyObjects(true);
+
+            return $configuration;
+        }
+
+        $configuration->setProxyDir($this->directory.'/Proxy');
+        $configuration->setProxyNamespace('JufGeneratedProxies');
+
+        return $configuration;
     }
 
     /**
