@@ -91,24 +91,31 @@ final class TableMetadataFactory
     {
         return new ForeignKeyMetadata(
             $foreignKey->getObjectName()?->getIdentifier()->getValue() ?? '',
-            $this->names($foreignKey->getReferencingColumnNames()),
+            $this->foreignKeyColumns($foreignKey->getReferencingColumnNames()),
             $foreignKey->getReferencedTableName()->getUnqualifiedName()->getValue(),
-            $this->names($foreignKey->getReferencedColumnNames()),
+            $this->foreignKeyColumns($foreignKey->getReferencedColumnNames()),
             $foreignKey->getOnDeleteAction()->value,
             $foreignKey->getOnUpdateAction()->value,
         );
     }
 
     /**
-     * @param array<UnqualifiedName> $names
+     * @param non-empty-list<UnqualifiedName> $names
+     *
+     * @return non-empty-list<string>
+     */
+    private function foreignKeyColumns(array $names): array
+    {
+        return array_map(static fn (UnqualifiedName $name): string => $name->getIdentifier()->getValue(), $names);
+    }
+
+    /**
+     * @param list<UnqualifiedName> $names
      *
      * @return list<string>
      */
     private function names(array $names): array
     {
-        return array_values(array_map(
-            static fn (UnqualifiedName $name): string => $name->getIdentifier()->getValue(),
-            $names,
-        ));
+        return array_map(static fn (UnqualifiedName $name): string => $name->getIdentifier()->getValue(), $names);
     }
 }

@@ -9,6 +9,8 @@
     <rule ref="rulesets/cleancode.xml">
         <!-- Static factories and named constructors are idiomatic for value objects. -->
         <exclude name="StaticAccess"/>
+        <!-- Test data builders expose boolean options as named arguments. -->
+        <exclude name="BooleanArgumentFlag"/>
     </rule>
     <rule ref="rulesets/codesize.xml/CyclomaticComplexity">
         <properties>
@@ -26,7 +28,7 @@
         </properties>
     </rule>
     <rule ref="rulesets/codesize.xml/ExcessiveClassLength"/>
-    <rule ref="rulesets/codesize.xml/ExcessiveParameterList"/>
+    <!-- Test data builders take many optional named arguments on purpose. -->
     <rule ref="rulesets/codesize.xml/ExcessivePublicCount"/>
     <rule ref="rulesets/codesize.xml/TooManyFields"/>
     <rule ref="rulesets/codesize.xml/TooManyMethods">

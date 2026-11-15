@@ -7,10 +7,10 @@ namespace Juf\DoctrineImportBundle\Schema;
 final readonly class ForeignKeyMetadata
 {
     /**
-     * @param list<string> $localColumns
-     * @param list<string> $foreignColumns
-     * @param string       $onDelete       referential action, e.g. "CASCADE" or "NO ACTION"
-     * @param string       $onUpdate       referential action, e.g. "CASCADE" or "NO ACTION"
+     * @param non-empty-list<string> $localColumns
+     * @param non-empty-list<string> $foreignColumns
+     * @param string                 $onDelete       referential action, e.g. "CASCADE" or "NO ACTION"
+     * @param string                 $onUpdate       referential action, e.g. "CASCADE" or "NO ACTION"
      */
     public function __construct(
         public string $name,

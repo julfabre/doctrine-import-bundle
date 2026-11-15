@@ -47,6 +47,9 @@ deptrac:
         - name: Symfony
           collectors:
               - { type: classLike, value: '^Symfony\\.*' }
+        - name: Inflector
+          collectors:
+              - { type: classLike, value: '^Doctrine\\Inflector\\.*' }
         - name: PhpGenerator
           collectors:
               - { type: classLike, value: '^Nette\\PhpGenerator\\.*' }
@@ -56,7 +59,7 @@ deptrac:
         Definition: [Diagnostic]
         Schema: [Diagnostic]
         SchemaDbal: [Schema, Diagnostic, Exception, Dbal]
-        Analysis: [Schema, Definition, Diagnostic]
+        Analysis: [Schema, Definition, Diagnostic, Exception, Inflector]
         Rendering: [Definition, PhpGenerator]
         Writer: [Rendering]
         Application: [Schema, SchemaDbal, Analysis, Definition, Rendering, Writer, Diagnostic, Exception]
