@@ -8,7 +8,6 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Schema\AbstractSchemaManager;
-use Doctrine\DBAL\Schema\Name\OptionallyQualifiedName;
 use Juf\DoctrineImportBundle\Diagnostic\Diagnostic;
 use Juf\DoctrineImportBundle\Diagnostic\Severity;
 use Juf\DoctrineImportBundle\Schema\SchemaMetadata;
@@ -46,7 +45,7 @@ final readonly class DbalSchemaReader implements SchemaReaderInterface
             }
 
             if ('' !== $name && $filter->accepts($name)) {
-                $tables[] = $this->readTable($schemaManager, $tableName, $name);
+                $tables[] = $this->readTable($schemaManager, $name);
             }
         }
 
@@ -65,12 +64,12 @@ final readonly class DbalSchemaReader implements SchemaReaderInterface
      *
      * @throws SchemaReadingException
      */
-    private function readTable(AbstractSchemaManager $schemaManager, OptionallyQualifiedName $tableName, string $name): TableMetadata
+    private function readTable(AbstractSchemaManager $schemaManager, string $name): TableMetadata
     {
         try {
             return $this->tableFactory->create($schemaManager->introspectTableByQuotedName($name));
         } catch (DbalException $dbalException) {
-            throw SchemaReadingException::forTable($tableName->toString(), $dbalException);
+            throw SchemaReadingException::forTable($name, $dbalException);
         }
     }
 
