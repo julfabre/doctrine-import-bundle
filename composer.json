@@ -1,0 +1,119 @@
+{
+    "name": "juf/doctrine-import-bundle",
+    "description": "Generate Doctrine ORM entities and repositories from an existing database.",
+    "license": "MIT",
+    "type": "symfony-bundle",
+    "keywords": [
+        "symfony",
+        "bundle",
+        "doctrine",
+        "orm",
+        "reverse-engineering",
+        "entity",
+        "generator",
+        "database"
+    ],
+    "authors": [
+        {
+            "name": "JuF",
+            "homepage": "https://github.com/julfabre"
+        }
+    ],
+    "homepage": "https://github.com/julfabre/doctrine-import-bundle",
+    "require": {
+        "php": "^8.2",
+        "symfony/config": "^6.4 || ^7.0 || ^8.0",
+        "symfony/console": "^6.4 || ^7.0 || ^8.0",
+        "symfony/dependency-injection": "^6.4 || ^7.0 || ^8.0",
+        "symfony/http-kernel": "^6.4 || ^7.0 || ^8.0"
+    },
+    "require-dev": {
+        "bamarni/composer-bin-plugin": "^1.8",
+        "doctrine/dbal": "^3.8 || ^4.0",
+        "doctrine/doctrine-bundle": "^2.11 || ^3.0",
+        "doctrine/orm": "^2.17 || ^3.0",
+        "phpunit/phpunit": "^11.5 || ^12.0 || ^13.0",
+        "symfony/error-handler": "^6.4.44 || ^7.0 || ^8.0",
+        "symfony/framework-bundle": "^6.4 || ^7.0 || ^8.0"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Juf\\DoctrineImportBundle\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Juf\\DoctrineImportBundle\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "bamarni/composer-bin-plugin": true,
+            "infection/extension-installer": true,
+            "phpstan/extension-installer": true
+        },
+        "sort-packages": true
+    },
+    "extra": {
+        "bamarni-bin": {
+            "bin-links": false,
+            "forward-command": false,
+            "target-directory": "vendor-bin"
+        }
+    },
+    "scripts": {
+        "cs": "vendor-bin/php-cs-fixer/vendor/bin/php-cs-fixer check --diff",
+        "deptrac": "vendor-bin/deptrac/vendor/bin/deptrac analyse --no-progress",
+        "fix": [
+            "vendor-bin/rector/vendor/bin/rector process",
+            "vendor-bin/php-cs-fixer/vendor/bin/php-cs-fixer fix"
+        ],
+        "phpmd": [
+            "vendor-bin/phpmd/vendor/bin/phpmd analyze src --no-progress --format=text --ruleset=phpmd.xml.dist",
+            "vendor-bin/phpmd/vendor/bin/phpmd analyze tests --no-progress --format=text --ruleset=phpmd.tests.xml.dist"
+        ],
+        "phpstan": "vendor-bin/phpstan/vendor/bin/phpstan analyse --no-progress --memory-limit=1G",
+        "qa": [
+            "@qa:static",
+            "@test:coverage",
+            "@test:mutation"
+        ],
+        "qa:static": [
+            "@composer validate --strict",
+            "@composer audit",
+            "@require-checker",
+            "@unused",
+            "@cs",
+            "@rector",
+            "@phpstan",
+            "@phpmd",
+            "@deptrac"
+        ],
+        "rector": "vendor-bin/rector/vendor/bin/rector process --dry-run --no-progress-bar",
+        "require-checker": "vendor-bin/composer-require-checker/vendor/bin/composer-require-checker check --config-file=composer-require-checker.json",
+        "test": "phpunit",
+        "test:coverage": [
+            "phpunit --coverage-text --coverage-clover=var/coverage/clover.xml --coverage-xml=var/coverage/coverage-xml --log-junit=var/coverage/junit.xml",
+            "@php tools/check-coverage.php var/coverage/clover.xml 95"
+        ],
+        "test:mutation": "vendor-bin/infection/vendor/bin/infection --threads=max --skip-initial-tests --coverage=var/coverage --show-mutations",
+        "unused": "vendor-bin/composer-unused/vendor/bin/composer-unused"
+    },
+    "scripts-descriptions": {
+        "cs": "Check coding style (PHP-CS-Fixer, dry run).",
+        "deptrac": "Check architectural layers.",
+        "fix": "Apply Rector and PHP-CS-Fixer fixes.",
+        "phpmd": "Run PHP Mess Detector (stricter on src, sentence-named test methods allowed in tests).",
+        "phpstan": "Run PHPStan at max level.",
+        "qa": "Run every quality check and the test suites.",
+        "qa:static": "Run every static check (no tests).",
+        "rector": "Check that Rector has nothing to change.",
+        "require-checker": "Check that every used symbol comes from a declared dependency.",
+        "test": "Run PHPUnit.",
+        "test:coverage": "Run PHPUnit with coverage reports (needs PCOV or Xdebug) and require 95 % line coverage.",
+        "test:mutation": "Run Infection on the coverage produced by test:coverage.",
+        "unused": "Check that every declared dependency is used."
+    }
+}

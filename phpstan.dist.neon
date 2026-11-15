@@ -1,0 +1,28 @@
+includes:
+    - phar://phpstan.phar/conf/bleedingEdge.neon
+
+parameters:
+    level: max
+    phpVersion: 80200
+    paths:
+        - src
+        - tests
+        - config
+        - tools
+    tmpDir: var/cache/phpstan
+    checkUninitializedProperties: true
+    checkImplicitMixed: true
+    checkBenevolentUnionTypes: true
+    reportPossiblyNonexistentGeneralArrayOffset: true
+    reportPossiblyNonexistentConstantArrayOffset: true
+    reportAnyTypeWideningInVarTag: true
+    checkMissingCallableSignature: true
+    treatPhpDocTypesAsCertain: false
+    exceptions:
+        check:
+            missingCheckedExceptionInThrows: true
+            tooWideThrowType: true
+        uncheckedExceptionClasses:
+            - LogicException
+            - RuntimeException
+            - PHPUnit\Framework\Exception

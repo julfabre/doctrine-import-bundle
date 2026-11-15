@@ -1,0 +1,52 @@
+deptrac:
+    cache_file: var/cache/.deptrac.cache
+    paths:
+        - ./src
+    exclude_files:
+        - '#.*Test\.php$#'
+    layers:
+        - name: Schema
+          collectors:
+              - { type: classLike, value: '^Juf\\DoctrineImportBundle\\Schema\\.*' }
+        - name: Analysis
+          collectors:
+              - { type: classLike, value: '^Juf\\DoctrineImportBundle\\Analysis\\.*' }
+        - name: Definition
+          collectors:
+              - { type: classLike, value: '^Juf\\DoctrineImportBundle\\Definition\\.*' }
+        - name: Rendering
+          collectors:
+              - { type: classLike, value: '^Juf\\DoctrineImportBundle\\Rendering\\.*' }
+        - name: Writer
+          collectors:
+              - { type: classLike, value: '^Juf\\DoctrineImportBundle\\Writer\\.*' }
+        - name: Application
+          collectors:
+              - { type: classLike, value: '^Juf\\DoctrineImportBundle\\Application\\.*' }
+        - name: Bundle
+          collectors:
+              - { type: classLike, value: '^Juf\\DoctrineImportBundle\\JufDoctrineImportBundle$' }
+        - name: Command
+          collectors:
+              - { type: classLike, value: '^Juf\\DoctrineImportBundle\\Command\\.*' }
+        - name: Dbal
+          collectors:
+              - { type: classLike, value: '^Doctrine\\DBAL\\.*' }
+        - name: Orm
+          collectors:
+              - { type: classLike, value: '^Doctrine\\(ORM|Persistence|Bundle)\\.*' }
+        - name: Symfony
+          collectors:
+              - { type: classLike, value: '^Symfony\\.*' }
+        - name: PhpGenerator
+          collectors:
+              - { type: classLike, value: '^Nette\\PhpGenerator\\.*' }
+    ruleset:
+        Definition: ~
+        Schema: [Dbal, Orm]
+        Analysis: [Schema, Definition]
+        Rendering: [Definition, PhpGenerator]
+        Writer: [Rendering]
+        Application: [Schema, Analysis, Definition, Rendering, Writer]
+        Command: [Application, Symfony, Orm, Definition]
+        Bundle: [Command, Symfony]
