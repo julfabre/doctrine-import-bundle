@@ -20,19 +20,23 @@ the only layer that talks to the user.
 
 | Layer | Namespace | May depend on |
 |---|---|---|
-| Definition | `Definition\` | nothing (pure value objects) |
-| Schema | `Schema\` | Doctrine DBAL, Doctrine ORM/Persistence |
-| Analysis | `Analysis\` | Schema, Definition |
+| Diagnostic | `Diagnostic\` | nothing |
+| Exception | `Exception\` | nothing |
+| Definition | `Definition\` | Diagnostic |
+| Schema | `Schema\` (model only) | Diagnostic |
+| SchemaDbal | `Schema\Dbal\` | Schema, Diagnostic, Exception, Doctrine DBAL |
+| Analysis | `Analysis\` | Schema, Definition, Diagnostic |
 | Rendering | `Rendering\` | Definition, nette/php-generator |
 | Writer | `Writer\` | Rendering |
-| Application | `Application\` | Schema, Analysis, Definition, Rendering, Writer |
-| Command | `Command\` | Application, Definition, Symfony, Doctrine ORM/Persistence |
+| Application | `Application\` | Schema, SchemaDbal, Analysis, Definition, Rendering, Writer, Diagnostic, Exception |
+| Command | `Command\` | Application, Definition, Diagnostic, Exception, Symfony, Doctrine ORM/Persistence |
 | Bundle | `JufDoctrineImportBundle` | Command, Symfony |
 
 Consequences:
 
-- Only `Schema` knows DBAL. No DBAL class leaks into the rest of the bundle: the
-  schema is copied into the bundle own read-only model.
+- Only `Schema\Dbal` knows DBAL. It copies the database structure into the read-only
+  model of `Schema`, so no DBAL class leaks into the rest of the bundle. Deptrac enforces it.
+- Every exception thrown by the bundle implements `Exception\ExceptionInterface`.
 - `Analysis`, `Definition` and `Rendering` know neither Symfony nor the database.
   They are tested with plain PHPUnit, without a kernel or a connection.
 - The bundle never writes to the database. Only `Writer` touches the filesystem.

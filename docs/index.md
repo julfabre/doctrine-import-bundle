@@ -10,9 +10,10 @@ Generate Doctrine ORM entities and repositories from an existing database.
 |---|---|
 | PHP | 8.2 or higher |
 | Symfony | 6.4, 7.x, 8.x |
-| Doctrine ORM | 2.17+, 3.x |
-| Doctrine DBAL | 3.8+, 4.x |
+| Doctrine ORM | 3.x |
+| Doctrine DBAL | 4.6+ |
 | DoctrineBundle | 2.11+, 3.x |
+| Databases | PostgreSQL, MySQL, MariaDB, SQLite |
 
 ## Usage
 

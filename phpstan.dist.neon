@@ -26,3 +26,8 @@ parameters:
             - LogicException
             - RuntimeException
             - PHPUnit\Framework\Exception
+    ignoreErrors:
+        # Tests let unexpected exceptions fail the test: declaring them with @throws adds no information.
+        -
+            identifier: missingType.checkedException
+            path: tests/*
