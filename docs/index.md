@@ -15,11 +15,101 @@ Generate Doctrine ORM entities and repositories from an existing database.
 | DoctrineBundle | 2.11+, 3.x |
 | Databases | PostgreSQL, MySQL, MariaDB, SQLite |
 
+## Installation
+
+The bundle is a development tool:
+
+```bash
+composer require --dev juf/doctrine-import-bundle
+```
+
+Without Symfony Flex, enable it for the `dev` environment in `config/bundles.php`:
+
+```php
+return [
+    // ...
+    Juf\DoctrineImportBundle\JufDoctrineImportBundle::class => ['dev' => true],
+];
+```
+
 ## Usage
 
 ```bash
 php bin/console generate:entities:from-database
 ```
+
+The command reads the tables of the database of the entity manager, then writes one entity and one
+repository per table. It prints the files with their status, then the diagnostics.
+
+| Option | Description |
+|---|---|
+| `--em=NAME` | Entity manager whose connection is read (default: the default entity manager) |
+| `--table=PATTERN` | Glob pattern of the tables to generate, repeatable (`--table='blog_*'`) |
+| `--exclude=PATTERN` | Glob pattern of the tables to ignore, repeatable. An exclusion wins over an inclusion |
+| `--table-prefix=PREFIX` | Prefix removed from table names before naming classes, repeatable (`wp_posts` → `Post`) |
+| `--namespace=NS` / `--dir=PATH` | Namespace and directory of the entities |
+| `--repository-namespace=NS` / `--repository-dir=PATH` | Namespace and directory of the repositories |
+| `--dry-run` | List the files without writing them |
+| `--force` | Overwrite existing files |
+
+- Existing files are **never overwritten without `--force`**. With `--force`, the whole file is
+  replaced: manual changes are lost.
+- The command exits with code `1` when a table or a column could not be generated (see the
+  diagnostics), `0` otherwise.
+
+## Configuration
+
+Every option has a default. Command line options override the configuration; repeatable options
+replace the configured lists.
+
+```yaml
+# config/packages/dev/juf_doctrine_import.yaml
+juf_doctrine_import:
+    entity_manager: ~             # default entity manager
+    table_prefixes: []            # e.g. ['wp_']
+    tables:
+        include: []               # glob patterns, empty means every table
+        exclude: []
+    entity:
+        namespace: 'App\Entity'
+        dir: '%kernel.project_dir%/src/Entity'
+    repository:
+        namespace: 'App\Repository'
+        dir: '%kernel.project_dir%/src/Repository'
+```
+
+## Generated code
+
+- One entity per table, mapped with Doctrine attributes; one `ServiceEntityRepository` per entity.
+- Class names are singular PascalCase (`blog_posts` → `BlogPost`), properties are camelCase.
+- Every column is named and typed explicitly. Dates use immutable types, decimals are strings.
+- Single-column foreign keys become `ManyToOne` associations with their inverse `OneToMany`
+  collection (`children` for a table referencing itself).
+- The code runs on PHP 8.2.
+
+## Diagnostics
+
+When part of the schema cannot be mapped safely, the bundle reports it instead of generating
+guessed code.
+
+| Code | Severity | Meaning |
+|---|---|---|
+| `table.no_primary_key` | error | Doctrine needs an identifier: the table is skipped |
+| `naming.invalid_identifier` | error | Name with characters other than `[A-Za-z0-9_]`: the table is skipped |
+| `column.unsupported_type` | error | Type unknown to the bundle: the column is skipped |
+| `naming.class_collision` | warning / error | Two tables give the same class name |
+| `naming.reserved_word`, `naming.leading_digit` | warning | Class name adjusted to be valid PHP |
+| `naming.property_collision` | warning | Association renamed to avoid an existing property |
+| `column.default_expression` | warning | SQL expression default (`CURRENT_TIMESTAMP`) not mapped |
+| `relation.composite_foreign_key` | warning | Composite foreign key kept as scalar fields |
+| `relation.non_primary_key_target` | warning | Foreign key to a non-primary-key column, unsupported by Doctrine |
+| `relation.foreign_key_in_primary_key` | warning | Derived identity, not mapped as an association yet |
+| `relation.missing_target` | warning | Foreign key to a table that is not generated |
+| `table.outside_search_path` | warning | PostgreSQL table outside the default schema, not read |
+| `table.composite_primary_key` | info | Supported, but Doctrine advises against it |
+| `relation.one_to_one_as_many_to_one` | info | Unique foreign key mapped as `ManyToOne` |
+| `column.enum_as_string`, `column.binary_as_mixed` | info | Type mapped approximately |
+| `naming.table_prefix_detected` | info | Every table shares a known prefix: configure it |
 
 ## Contributing
 

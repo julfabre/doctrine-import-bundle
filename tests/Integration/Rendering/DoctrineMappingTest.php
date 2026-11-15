@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace Juf\DoctrineImportBundle\Tests\Integration\Rendering;
 
 use Doctrine\DBAL\DriverManager;
-use Doctrine\ORM\Configuration;
-use Doctrine\ORM\EntityManager;
-use Doctrine\ORM\Mapping\Driver\AttributeDriver;
 use Doctrine\ORM\Tools\SchemaValidator;
 use Juf\DoctrineImportBundle\Rendering\CodeGenerator;
 use Juf\DoctrineImportBundle\Rendering\GeneratedFile;
 use Juf\DoctrineImportBundle\Rendering\RenderingOptions;
+use Juf\DoctrineImportBundle\Tests\Integration\DoctrineTestConfiguration;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -26,7 +24,6 @@ final class DoctrineMappingTest extends TestCase
         $this->directory = sys_get_temp_dir().'/juf_doctrine_import/'.bin2hex(random_bytes(6));
         mkdir($this->directory.'/Entity', 0o777, true);
         mkdir($this->directory.'/Repository', 0o777, true);
-        mkdir($this->directory.'/Proxy', 0o777, true);
     }
 
     #[Test]
@@ -46,29 +43,10 @@ final class DoctrineMappingTest extends TestCase
             require_once $path;
         }
 
-        $configuration = $this->configuration();
-        $entityManager = new EntityManager(DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true], $configuration), $configuration);
+        $entityManager = DoctrineTestConfiguration::entityManager(DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]), $this->directory.'/Entity');
 
         self::assertCount(4, $entityManager->getMetadataFactory()->getAllMetadata());
         self::assertSame([], (new SchemaValidator($entityManager))->validateMapping());
-    }
-
-    private function configuration(): Configuration
-    {
-        $configuration = new Configuration();
-        $configuration->setMetadataDriverImpl(new AttributeDriver([$this->directory.'/Entity']));
-
-        // PHP 8.4+ lazy objects replace the generated proxies, whose configuration is then deprecated.
-        if (\PHP_VERSION_ID >= 80400) {
-            $configuration->enableNativeLazyObjects(true);
-
-            return $configuration;
-        }
-
-        $configuration->setProxyDir($this->directory.'/Proxy');
-        $configuration->setProxyNamespace('JufGeneratedProxies');
-
-        return $configuration;
     }
 
     /**

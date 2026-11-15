@@ -43,6 +43,16 @@ final class ServiceDefinitionTest extends TestCase
         self::assertSame([['command' => 'generate:entities:from-database']], $definition->getTag('console.command'));
     }
 
+    #[Test]
+    public function it_passes_the_processed_configuration_to_the_command(): void
+    {
+        $container = $this->loadBundleServices();
+
+        $defaults = $container->getParameter('juf_doctrine_import.defaults');
+        self::assertIsArray($defaults);
+        self::assertSame(['namespace' => 'App\\Entity', 'dir' => '%kernel.project_dir%/src/Entity'], $defaults['entity'] ?? null);
+    }
+
     private function commandDefinition(): Definition
     {
         return $this->loadBundleServices()->getDefinition(self::COMMAND_SERVICE_ID);
