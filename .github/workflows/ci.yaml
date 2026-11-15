@@ -16,6 +16,38 @@ jobs:
     quality:
         name: Quality (static analysis + mutation)
         runs-on: ubuntu-latest
+        # Coverage and mutation testing need every platform-specific test, hence all databases.
+        services:
+            postgresql:
+                image: postgres:17
+                env:
+                    POSTGRES_USER: db
+                    POSTGRES_PASSWORD: db
+                    POSTGRES_DB: db
+                ports: ['5432:5432']
+                options: --health-cmd "pg_isready -U db" --health-interval 3s --health-timeout 5s --health-retries 30
+            mysql:
+                image: mysql:8.4
+                env:
+                    MYSQL_ROOT_PASSWORD: root
+                    MYSQL_DATABASE: db
+                    MYSQL_USER: db
+                    MYSQL_PASSWORD: db
+                ports: ['3306:3306']
+                options: --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -proot" --health-interval 3s --health-timeout 5s --health-retries 30
+            mariadb:
+                image: mariadb:11.4
+                env:
+                    MARIADB_ROOT_PASSWORD: root
+                    MARIADB_DATABASE: db
+                    MARIADB_USER: db
+                    MARIADB_PASSWORD: db
+                ports: ['3307:3306']
+                options: --health-cmd "healthcheck.sh --connect --innodb_initialized" --health-interval 3s --health-timeout 5s --health-retries 30
+        env:
+            DATABASE_URL_POSTGRESQL: 'pgsql://db:db@127.0.0.1:5432/db?serverVersion=17&charset=utf8'
+            DATABASE_URL_MYSQL: 'mysql://db:db@127.0.0.1:3306/db?serverVersion=8.4.0&charset=utf8mb4'
+            DATABASE_URL_MARIADB: 'mysql://db:db@127.0.0.1:3307/db?serverVersion=11.4.0-MariaDB&charset=utf8mb4'
         steps:
             - uses: actions/checkout@v4
 
@@ -23,6 +55,7 @@ jobs:
               with:
                   php-version: '8.2'
                   coverage: pcov
+                  extensions: pdo_pgsql, pdo_mysql, pdo_sqlite
                   tools: composer:v2
 
             - uses: ramsey/composer-install@v3
