@@ -134,8 +134,8 @@ final class RelationAnalyzerTest extends TestCase
 
         $category = self::entity($model, 'Category');
         $parent = self::onlyManyToOne($category);
-        self::assertSame(['parent', 'Category', 'categories'], [$parent->propertyName, $parent->targetEntity, $parent->inversedBy]);
-        self::assertEquals([new OneToManyDefinition('categories', 'Category', mappedBy: 'parent')], $category->oneToMany);
+        self::assertSame(['parent', 'Category', 'children'], [$parent->propertyName, $parent->targetEntity, $parent->inversedBy]);
+        self::assertEquals([new OneToManyDefinition('children', 'Category', mappedBy: 'parent')], $category->oneToMany);
     }
 
     #[Test]

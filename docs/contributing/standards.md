@@ -67,6 +67,9 @@ Doctrine best practices, which sometimes differ from the rules above:
 - Entities are mutable (setters, collections): immutability applies to the bundle
   code, not to the generated code.
 - Generated code must run on PHP 8.2.
+- Generated classes are not `final`: Doctrine lazy-loading proxies extend entities.
+- Every column is named explicitly and typed with a `Types::` constant, so that the mapping reads
+  without knowing Doctrine defaults and the schema round-trips exactly.
 - No public property. Collections are initialised in the constructor.
 - A foreign key is mapped as an association, never as both a field and an association.
 - Date and time columns use the immutable types.

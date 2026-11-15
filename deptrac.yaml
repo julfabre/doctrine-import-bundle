@@ -60,7 +60,7 @@ deptrac:
         Schema: [Diagnostic]
         SchemaDbal: [Schema, Diagnostic, Exception, Dbal]
         Analysis: [Schema, Definition, Diagnostic, Exception, Inflector]
-        Rendering: [Definition, PhpGenerator]
+        Rendering: [Definition, PhpGenerator, Inflector]
         Writer: [Rendering]
         Application: [Schema, SchemaDbal, Analysis, Definition, Rendering, Writer, Diagnostic, Exception]
         Command: [Application, Symfony, Orm, Definition, Diagnostic, Exception]

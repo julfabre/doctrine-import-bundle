@@ -8,6 +8,7 @@ use PhpCsFixer\Runner\Parallel\ParallelConfigFactory;
 
 $finder = (new Finder())
     ->in([__DIR__.'/src', __DIR__.'/tests', __DIR__.'/config', __DIR__.'/tools'])
+    ->exclude('Fixtures')
     ->append([__FILE__, __DIR__.'/rector.php', __DIR__.'/composer-unused.php'])
 ;
 

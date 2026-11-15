@@ -78,10 +78,10 @@ final class TableMetadataFactory
             array_values($table->getIndexes()),
         );
         // DBAL also lists the index backing the primary key: it is already described by the primary key.
-        $indexes = array_values(array_filter(
+        $indexes = array_filter(
             $indexes,
             static fn (IndexMetadata $index): bool => !$index->unique || $index->columns !== $primaryKey,
-        ));
+        );
         usort($indexes, static fn (IndexMetadata $left, IndexMetadata $right): int => $left->name <=> $right->name);
 
         return $indexes;
