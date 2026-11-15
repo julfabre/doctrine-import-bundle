@@ -127,7 +127,8 @@ final readonly class RelationAnalyzer
 
     private function inverseName(TableMetadata $table, EntityDefinition $entity, string $propertyName, string $targetTable): string
     {
-        $collection = $this->naming->collectionNameForEntity($entity->className);
+        // A table referencing itself is a tree: its inverse side reads better as "children" than as a plural.
+        $collection = $targetTable === $table->name ? 'children' : $this->naming->collectionNameForEntity($entity->className);
         $foreignKeysToTarget = array_filter($table->foreignKeys, static fn (ForeignKeyMetadata $foreignKey): bool => $targetTable === $foreignKey->foreignTable);
 
         // Several foreign keys to the same table need distinct inverse collections: createdByPosts, updatedByPosts.

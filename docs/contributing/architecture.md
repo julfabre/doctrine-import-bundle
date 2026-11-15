@@ -47,10 +47,10 @@ New behaviour is added by adding a class, not by editing existing ones:
 
 | Need | Extension point |
 |---|---|
-| A new mapping format (attributes, XML…) | `MappingStrategy` implementation |
-| A new entity style | `EntityStyle` implementation |
-| A new SQL type | `TypeMapper` rule |
-| A new naming rule | `NamingStrategy` implementation |
+| A new mapping format (attributes, XML…) | `Rendering\MappingStrategyInterface` implementation |
+| A new naming rule | `Analysis\Naming\NamingStrategyInterface` implementation |
+| A new SQL type | `Analysis\TypeMapper` rule |
+| A new entity style (planned) | Introduced with the second style |
 
 Every implementation of an extension point passes the same contract test suite.
 

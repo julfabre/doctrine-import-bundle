@@ -24,6 +24,7 @@
         "php": "^8.2",
         "doctrine/dbal": "^4.6",
         "doctrine/inflector": "^2.0",
+        "nette/php-generator": "^4.2",
         "symfony/config": "^6.4 || ^7.0 || ^8.0",
         "symfony/console": "^6.4 || ^7.0 || ^8.0",
         "symfony/dependency-injection": "^6.4 || ^7.0 || ^8.0",
@@ -73,7 +74,7 @@
         ],
         "phpmd": [
             "vendor-bin/phpmd/vendor/bin/phpmd analyze src --no-progress --format=text --ruleset=phpmd.xml.dist",
-            "vendor-bin/phpmd/vendor/bin/phpmd analyze tests --no-progress --format=text --ruleset=phpmd.tests.xml.dist"
+            "vendor-bin/phpmd/vendor/bin/phpmd analyze tests --no-progress --format=text --ruleset=phpmd.tests.xml.dist --exclude '*/tests/Fixtures/*'"
         ],
         "phpstan": "vendor-bin/phpstan/vendor/bin/phpstan analyse --no-progress --memory-limit=1G",
         "qa": [

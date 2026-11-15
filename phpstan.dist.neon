@@ -9,6 +9,8 @@ parameters:
         - tests
         - config
         - tools
+    excludePaths:
+        - tests/Fixtures/*
     tmpDir: var/cache/phpstan
     checkUninitializedProperties: true
     checkImplicitMixed: true
