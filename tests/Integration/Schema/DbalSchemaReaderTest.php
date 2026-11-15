@@ -67,7 +67,7 @@ final class DbalSchemaReaderTest extends DatabaseTestCase
         $post = $this->table($this->readFixture($platform), 'post');
 
         self::assertSame(
-            ['id', 'author_id', 'title', 'status', 'price', 'is_featured', 'published_at'],
+            ['id', 'author_id', 'title', 'status', 'price', 'is_featured', 'published_at', 'created_at'],
             array_map(static fn (ColumnMetadata $column): string => $column->name, $post->columns),
         );
         self::assertSame([Types::INTEGER, false], $this->typeAndNullability($post, 'id'));
@@ -98,6 +98,7 @@ final class DbalSchemaReaderTest extends DatabaseTestCase
         self::assertSame('draft', $this->column($this->table($schema, 'post'), 'status')->default);
         self::assertSame('1', $this->column($this->table($schema, 'order_line'), 'quantity')->default);
         self::assertNull($this->column($this->table($schema, 'post'), 'title')->default);
+        self::assertSame('CURRENT_TIMESTAMP', $this->column($this->table($schema, 'post'), 'created_at')->default);
     }
 
     #[Test]

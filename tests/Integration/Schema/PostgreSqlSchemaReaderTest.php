@@ -10,7 +10,6 @@ use Juf\DoctrineImportBundle\Schema\ColumnMetadata;
 use Juf\DoctrineImportBundle\Schema\ColumnType;
 use Juf\DoctrineImportBundle\Schema\Dbal\DbalSchemaReader;
 use Juf\DoctrineImportBundle\Schema\Dbal\PlatformNameResolver;
-use Juf\DoctrineImportBundle\Schema\Dbal\SchemaReadingException;
 use Juf\DoctrineImportBundle\Schema\Dbal\TableMetadataFactory;
 use Juf\DoctrineImportBundle\Schema\IndexMetadata;
 use Juf\DoctrineImportBundle\Schema\SchemaMetadata;
@@ -21,7 +20,6 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\UsesClass;
 
 #[CoversClass(DbalSchemaReader::class)]
-#[CoversClass(SchemaReadingException::class)]
 #[UsesClass(SchemaMetadata::class)]
 #[UsesClass(TableMetadata::class)]
 #[UsesClass(ColumnMetadata::class)]
@@ -51,15 +49,19 @@ final class PostgreSqlSchemaReaderTest extends DatabaseTestCase
     }
 
     #[Test]
-    public function it_fails_with_an_actionable_message_on_an_unknown_column_type(): void
+    public function it_skips_a_table_with_an_unknown_column_type_and_reports_it(): void
     {
         $connection = $this->connect('postgresql');
         $connection->executeStatement("CREATE TYPE mood AS ENUM ('sad', 'happy')");
         $connection->executeStatement('CREATE TABLE person (id INT PRIMARY KEY, current_mood mood)');
+        $connection->executeStatement('CREATE TABLE team (id INT PRIMARY KEY)');
 
-        $this->expectException(SchemaReadingException::class);
-        $this->expectExceptionMessageMatches('/^Cannot read table "person": Unknown database type "mood" requested, .+[^.]\. If the table uses a database type unknown to Doctrine DBAL, map it with the "doctrine\.dbal\.mapping_types" configuration, or exclude the table\.$/');
+        $schema = (new DbalSchemaReader($connection))->read(new TableFilter());
 
-        (new DbalSchemaReader($connection))->read(new TableFilter());
+        self::assertSame(['team'], array_map(static fn (TableMetadata $table): string => $table->name, $schema->tables));
+        self::assertCount(1, $schema->diagnostics);
+        $diagnostic = $schema->diagnostics[0];
+        self::assertSame([Severity::Error, 'table.unreadable', 'person'], [$diagnostic->severity, $diagnostic->code, $diagnostic->table]);
+        self::assertMatchesRegularExpression('/^Table "person" cannot be read: Unknown database type "mood" requested, .+[^.]\\. Map the type with the "doctrine\\.dbal\\.mapping_types" configuration, or exclude the table\\. The table is skipped\\.$/', $diagnostic->message);
     }
 }

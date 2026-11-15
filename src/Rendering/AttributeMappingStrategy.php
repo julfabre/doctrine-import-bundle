@@ -21,6 +21,12 @@ final readonly class AttributeMappingStrategy implements MappingStrategyInterfac
 {
     private const ORM = 'Doctrine\ORM\Mapping';
 
+    private const DATE_EXPRESSIONS = [
+        'CURRENT_TIMESTAMP' => 'CurrentTimestamp',
+        'CURRENT_DATE' => 'CurrentDate',
+        'CURRENT_TIME' => 'CurrentTime',
+    ];
+
     public function __construct(
         private EntityClassBuilder $classBuilder = new EntityClassBuilder(),
     ) {
@@ -64,7 +70,11 @@ final readonly class AttributeMappingStrategy implements MappingStrategyInterfac
         ]));
 
         foreach ($entity->indexes as $index) {
-            $class->addAttribute(self::ORM.($index->unique ? '\UniqueConstraint' : '\Index'), ['name' => $index->name, 'columns' => $index->columns]);
+            $class->addAttribute(self::ORM.($index->unique ? '\UniqueConstraint' : '\Index'), self::withoutNulls([
+                'name' => $index->name,
+                'columns' => $index->columns,
+                'flags' => [] === $index->flags ? null : $index->flags,
+            ]));
         }
     }
 
@@ -79,19 +89,19 @@ final readonly class AttributeMappingStrategy implements MappingStrategyInterfac
             $property->addAttribute(self::ORM.'\GeneratedValue', ['strategy' => 'IDENTITY']);
         }
 
-        $property->addAttribute(self::ORM.'\Column', self::columnArguments($field));
+        $property->addAttribute(self::ORM.'\Column', self::columnArguments($field, self::defaultExpression($class, $field)));
     }
 
     /**
      * @return array<string, mixed>
      */
-    private static function columnArguments(FieldDefinition $field): array
+    private static function columnArguments(FieldDefinition $field, ?Literal $defaultExpression): array
     {
         $options = $field->options;
         $columnOptions = self::withoutNulls([
             'unsigned' => self::flag($options->unsigned),
             'fixed' => self::flag($options->fixed),
-            'default' => $options->default,
+            'default' => $defaultExpression ?? $options->default,
             'comment' => $options->comment,
         ]);
 
@@ -137,6 +147,21 @@ final readonly class AttributeMappingStrategy implements MappingStrategyInterfac
     private static function withoutNulls(array $arguments): array
     {
         return array_filter($arguments, static fn (mixed $value): bool => null !== $value);
+    }
+
+    /**
+     * Standard date expressions are rendered as DBAL default expressions, so that every platform gets the right SQL.
+     */
+    private static function defaultExpression(ClassType $class, FieldDefinition $field): ?Literal
+    {
+        $expression = self::DATE_EXPRESSIONS[$field->options->default ?? ''] ?? null;
+        if (null === $expression || '\DateTimeImmutable' !== $field->phpType) {
+            return null;
+        }
+
+        $class->getNamespace()?->addUse('Doctrine\DBAL\Schema\DefaultExpression\\'.$expression);
+
+        return new Literal('new '.$expression.'()');
     }
 
     /**

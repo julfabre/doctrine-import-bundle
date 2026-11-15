@@ -67,7 +67,7 @@ final readonly class EntityAnalyzer
             $fields,
             [],
             [],
-            array_map(static fn (IndexMetadata $index): IndexDefinition => new IndexDefinition($index->name, $index->columns, $index->unique), $table->indexes),
+            array_map(static fn (IndexMetadata $index): IndexDefinition => new IndexDefinition($index->name, $index->columns, $index->unique, $index->flags), $table->indexes),
             $table->comment,
         );
     }

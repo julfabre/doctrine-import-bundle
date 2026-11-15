@@ -6,8 +6,6 @@ namespace Juf\DoctrineImportBundle\Schema\Dbal;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
-use Doctrine\DBAL\Platforms\AbstractPlatform;
-use Doctrine\DBAL\Schema\AbstractSchemaManager;
 use Juf\DoctrineImportBundle\Diagnostic\Diagnostic;
 use Juf\DoctrineImportBundle\Diagnostic\Severity;
 use Juf\DoctrineImportBundle\Schema\SchemaMetadata;
@@ -44,8 +42,14 @@ final readonly class DbalSchemaReader implements SchemaReaderInterface
                 continue;
             }
 
-            if ('' !== $name && $filter->accepts($name)) {
-                $tables[] = $this->readTable($schemaManager, $name);
+            if ('' === $name || !$filter->accepts($name)) {
+                continue;
+            }
+
+            try {
+                $tables[] = $this->tableFactory->create($schemaManager->introspectTableByQuotedName($name));
+            } catch (DbalException $dbalException) {
+                $diagnostics[] = $this->unreadable($name, $dbalException);
             }
         }
 
@@ -59,18 +63,20 @@ final readonly class DbalSchemaReader implements SchemaReaderInterface
     }
 
     /**
-     * @param AbstractSchemaManager<AbstractPlatform> $schemaManager
-     * @param non-empty-string                        $name
-     *
-     * @throws SchemaReadingException
+     * DBAL reads a table as a whole: a single column of unknown type makes the whole table unreadable.
      */
-    private function readTable(AbstractSchemaManager $schemaManager, string $name): TableMetadata
+    private function unreadable(string $table, DbalException $exception): Diagnostic
     {
-        try {
-            return $this->tableFactory->create($schemaManager->introspectTableByQuotedName($name));
-        } catch (DbalException $dbalException) {
-            throw SchemaReadingException::forTable($name, $dbalException);
-        }
+        return new Diagnostic(
+            Severity::Error,
+            'table.unreadable',
+            \sprintf(
+                'Table "%s" cannot be read: %s. Map the type with the "doctrine.dbal.mapping_types" configuration, or exclude the table. The table is skipped.',
+                $table,
+                rtrim($exception->getMessage(), '.'),
+            ),
+            $table,
+        );
     }
 
     private function outsideSearchPath(string $qualifiedName): Diagnostic

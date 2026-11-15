@@ -143,23 +143,22 @@ final class EntityAnalyzerTest extends TestCase
     }
 
     #[Test]
-    public function it_keeps_literal_defaults_and_reports_expression_defaults(): void
+    public function it_keeps_literal_and_standard_date_defaults_and_reports_other_expressions(): void
     {
         $model = $this->analyze(SchemaBuilder::table('post', [
             SchemaBuilder::id(),
             SchemaBuilder::column('status', 'string', default: 'draft'),
             SchemaBuilder::column('created_at', 'datetime', default: 'CURRENT_TIMESTAMP'),
             SchemaBuilder::column('updated_at', 'datetime', default: 'now()'),
+            SchemaBuilder::column('reviewed_at', 'datetime', default: 'current_timestamp()'),
         ]));
 
         $post = self::entity($model, 'Post');
         self::assertSame('draft', self::field($post, 'status')->options->default);
-        self::assertNull(self::field($post, 'createdAt')->options->default);
+        self::assertSame('CURRENT_TIMESTAMP', self::field($post, 'createdAt')->options->default);
         self::assertNull(self::field($post, 'updatedAt')->options->default);
-        self::assertSame([
-            ['warning', 'column.default_expression', 'post', 'created_at'],
-            ['warning', 'column.default_expression', 'post', 'updated_at'],
-        ], self::diagnostics($model));
+        self::assertSame('CURRENT_TIMESTAMP', self::field($post, 'reviewedAt')->options->default);
+        self::assertSame([['warning', 'column.default_expression', 'post', 'updated_at']], self::diagnostics($model));
     }
 
     #[Test]
@@ -203,11 +202,13 @@ final class EntityAnalyzerTest extends TestCase
         $model = $this->analyze(SchemaBuilder::table('user', [SchemaBuilder::id(), SchemaBuilder::column('email', 'string')], indexes: [
             new IndexMetadata('uniq_user_email', ['email'], unique: true),
             new IndexMetadata('idx_user_email_id', ['email', 'id'], unique: false),
+            new IndexMetadata('idx_user_bio', ['email'], unique: false, flags: ['fulltext']),
         ]));
 
         self::assertEquals([
             new IndexDefinition('uniq_user_email', ['email'], unique: true),
             new IndexDefinition('idx_user_email_id', ['email', 'id'], unique: false),
+            new IndexDefinition('idx_user_bio', ['email'], unique: false, flags: ['fulltext']),
         ], self::entity($model, 'User')->indexes);
     }
 

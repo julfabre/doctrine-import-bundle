@@ -6,19 +6,9 @@ namespace Juf\DoctrineImportBundle\Schema\Dbal;
 
 use Juf\DoctrineImportBundle\Exception\ExceptionInterface;
 use RuntimeException;
-use Throwable;
 
 final class SchemaReadingException extends RuntimeException implements ExceptionInterface
 {
-    public static function forTable(string $table, Throwable $previous): self
-    {
-        return new self(\sprintf(
-            'Cannot read table "%s": %s If the table uses a database type unknown to Doctrine DBAL, map it with the "doctrine.dbal.mapping_types" configuration, or exclude the table.',
-            $table,
-            rtrim($previous->getMessage(), '.').'.',
-        ), previous: $previous);
-    }
-
     public static function unsupportedPlatform(string $platformClass): self
     {
         return new self(\sprintf(

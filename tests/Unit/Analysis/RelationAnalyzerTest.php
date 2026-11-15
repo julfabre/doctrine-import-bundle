@@ -286,6 +286,19 @@ final class RelationAnalyzerTest extends TestCase
         self::assertSame([], self::diagnostics($model));
     }
 
+    #[Test]
+    public function it_reports_an_on_update_action_that_doctrine_cannot_map(): void
+    {
+        $model = $this->analyze($this->author(), SchemaBuilder::table('post', [SchemaBuilder::id(), SchemaBuilder::column('author_id')], foreignKeys: [
+            SchemaBuilder::foreignKey(['author_id'], 'author', onDelete: 'RESTRICT', onUpdate: 'CASCADE'),
+        ]), SchemaBuilder::table('review', [SchemaBuilder::id(), SchemaBuilder::column('author_id')], foreignKeys: [
+            SchemaBuilder::foreignKey(['author_id'], 'author', onUpdate: 'RESTRICT'),
+        ]));
+
+        self::assertSame('author', self::onlyManyToOne(self::entity($model, 'Post'))->propertyName);
+        self::assertSame([['warning', 'relation.on_update_not_mapped', 'post', 'author_id']], self::diagnostics($model));
+    }
+
     private function author(): TableMetadata
     {
         return SchemaBuilder::table('author', [SchemaBuilder::id()]);

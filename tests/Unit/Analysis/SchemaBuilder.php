@@ -80,7 +80,8 @@ final class SchemaBuilder
         string $foreignTable,
         array $foreignColumns = ['id'],
         string $onDelete = 'NO ACTION',
+        string $onUpdate = 'NO ACTION',
     ): ForeignKeyMetadata {
-        return new ForeignKeyMetadata('fk_'.implode('_', $localColumns), $localColumns, $foreignTable, $foreignColumns, $onDelete, 'NO ACTION');
+        return new ForeignKeyMetadata('fk_'.implode('_', $localColumns), $localColumns, $foreignTable, $foreignColumns, $onDelete, $onUpdate);
     }
 }

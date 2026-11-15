@@ -155,6 +155,24 @@ final class AttributeMappingStrategyTest extends TestCase
     }
 
     #[Test]
+    public function it_renders_standard_date_defaults_as_dbal_expressions(): void
+    {
+        $code = $this->render(DefinitionBuilder::entity('Post', [
+            DefinitionBuilder::identityId(),
+            DefinitionBuilder::field('createdAt', 'created_at', 'datetime_immutable', '\\DateTimeImmutable', default: 'CURRENT_TIMESTAMP'),
+            DefinitionBuilder::field('createdOn', 'created_on', 'date_immutable', '\\DateTimeImmutable', default: 'CURRENT_DATE'),
+            DefinitionBuilder::field('createdTime', 'created_time', 'time_immutable', '\\DateTimeImmutable', default: 'CURRENT_TIME'),
+            DefinitionBuilder::field('label', 'label', default: 'CURRENT_TIMESTAMP'),
+        ]));
+
+        self::assertStringContainsString("use Doctrine\\DBAL\\Schema\\DefaultExpression\\CurrentTimestamp;\n", $code);
+        self::assertStringContainsString("#[ORM\\Column(name: 'created_at', type: Types::DATETIME_IMMUTABLE, options: ['default' => new CurrentTimestamp()])]\n    private \\DateTimeImmutable \$createdAt;", $code);
+        self::assertStringContainsString("options: ['default' => new CurrentDate()])]", $code);
+        self::assertStringContainsString("options: ['default' => new CurrentTime()])]", $code);
+        self::assertStringContainsString("#[ORM\\Column(name: 'label', type: Types::STRING, options: ['default' => 'CURRENT_TIMESTAMP'])]", $code);
+    }
+
+    #[Test]
     public function it_renders_is_getters_for_booleans_and_fluent_setters(): void
     {
         $code = $this->render(DefinitionBuilder::entity('Post', [
@@ -231,12 +249,14 @@ final class AttributeMappingStrategyTest extends TestCase
         $code = $this->render(DefinitionBuilder::entity('User', indexes: [
             new IndexDefinition('uniq_user_email', ['email'], unique: true),
             new IndexDefinition('idx_user_name', ['last_name', 'first_name'], unique: false),
+            new IndexDefinition('idx_user_bio', ['bio'], unique: false, flags: ['fulltext']),
         ], comment: 'Registered users'));
 
         self::assertStringContainsString(<<<'PHP'
             #[ORM\Table(name: 'user', options: ['comment' => 'Registered users'])]
             #[ORM\UniqueConstraint(name: 'uniq_user_email', columns: ['email'])]
             #[ORM\Index(name: 'idx_user_name', columns: ['last_name', 'first_name'])]
+            #[ORM\Index(name: 'idx_user_bio', columns: ['bio'], flags: ['fulltext'])]
             class User
             PHP, $code);
     }
