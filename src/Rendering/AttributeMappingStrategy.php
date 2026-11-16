@@ -85,8 +85,13 @@ final readonly class AttributeMappingStrategy implements MappingStrategyInterfac
             $property->addAttribute(self::ORM.'\Id');
         }
 
-        if (IdGeneration::Identity === $field->idGeneration) {
-            $property->addAttribute(self::ORM.'\GeneratedValue', ['strategy' => 'IDENTITY']);
+        if (IdGeneration::Identity === $field->idGeneration || IdGeneration::Sequence === $field->idGeneration) {
+            $property->addAttribute(self::ORM.'\GeneratedValue', ['strategy' => $field->idGeneration->value]);
+        }
+
+        if (null !== $field->sequenceName) {
+            // One value at a time, like the other clients of the sequence: no gap, no collision.
+            $property->addAttribute(self::ORM.'\SequenceGenerator', ['sequenceName' => $field->sequenceName, 'allocationSize' => 1]);
         }
 
         $property->addAttribute(self::ORM.'\Column', self::columnArguments($field, self::defaultExpression($class, $field)));

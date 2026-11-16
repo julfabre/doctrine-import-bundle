@@ -10,6 +10,7 @@ final readonly class FieldDefinition
      * @param string            $doctrineType e.g. "integer" or "datetime_immutable"
      * @param string            $phpType      e.g. "int" or "\DateTimeImmutable"
      * @param IdGeneration|null $idGeneration null when the field is not part of the identifier
+     * @param string|null       $sequenceName set when the identifier is taken from a sequence
      */
     public function __construct(
         public string $propertyName,
@@ -19,6 +20,7 @@ final readonly class FieldDefinition
         public bool $nullable,
         public ?IdGeneration $idGeneration,
         public ColumnOptions $options,
+        public ?string $sequenceName = null,
     ) {
     }
 

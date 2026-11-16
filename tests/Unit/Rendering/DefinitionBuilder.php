@@ -63,6 +63,7 @@ final class DefinitionBuilder
         bool $fixed = false,
         ?string $default = null,
         ?string $comment = null,
+        ?string $sequenceName = null,
     ): FieldDefinition {
         return new FieldDefinition(
             $propertyName,
@@ -72,6 +73,7 @@ final class DefinitionBuilder
             $nullable,
             $idGeneration,
             new ColumnOptions($length, $precision, $scale, $unsigned, $fixed, $default, $comment),
+            $sequenceName,
         );
     }
 }

@@ -246,6 +246,65 @@ final class EntityAnalyzerTest extends TestCase
         self::assertSame([['info', 'column.enum_as_string', 'ticket', 'priority']], self::diagnostics($model));
     }
 
+    #[Test]
+    public function it_generates_a_database_generated_id_for_a_primary_key_defaulting_to_nextval(): void
+    {
+        $model = $this->analyze(SchemaBuilder::table('product', [SchemaBuilder::column('id', default: "nextval('product_id_seq'::regclass)")]));
+
+        $id = self::field(self::entity($model, 'Product'), 'id');
+        self::assertSame(IdGeneration::Sequence, $id->idGeneration);
+        self::assertSame('product_id_seq', $id->sequenceName);
+        self::assertSame("nextval('product_id_seq'::regclass)", $id->options->default);
+    }
+
+    #[Test]
+    public function it_does_not_report_the_nextval_default_of_a_serial_primary_key(): void
+    {
+        $model = $this->analyze(SchemaBuilder::table('product', [SchemaBuilder::column('id', default: "nextval('product_id_seq'::regclass)")]));
+
+        self::assertSame([], self::diagnostics($model));
+    }
+
+    #[Test]
+    public function it_still_reports_a_nextval_default_on_a_column_outside_the_primary_key(): void
+    {
+        $model = $this->analyze(SchemaBuilder::table('ticket', [
+            SchemaBuilder::id(),
+            SchemaBuilder::column('number', default: "nextval('ticket_number_seq'::regclass)"),
+        ]));
+
+        $number = self::field(self::entity($model, 'Ticket'), 'number');
+        self::assertNull($number->idGeneration);
+        self::assertNull($number->sequenceName);
+        self::assertNull($number->options->default);
+        self::assertSame([['warning', 'column.default_expression', 'ticket', 'number']], self::diagnostics($model));
+    }
+
+    #[Test]
+    public function it_keeps_assigned_ids_for_a_nextval_default_in_a_composite_primary_key(): void
+    {
+        $model = $this->analyze(SchemaBuilder::table('order_line', [
+            SchemaBuilder::column('order_id', default: "nextval('order_line_order_id_seq'::regclass)"),
+            SchemaBuilder::column('product_id'),
+        ], primaryKey: ['order_id', 'product_id']));
+
+        $orderId = self::field(self::entity($model, 'OrderLine'), 'orderId');
+        self::assertSame(IdGeneration::None, $orderId->idGeneration);
+        self::assertNull($orderId->sequenceName);
+    }
+
+    #[Test]
+    public function it_keeps_an_assigned_id_when_the_sequence_name_is_qualified_or_quoted(): void
+    {
+        $model = $this->analyze(
+            SchemaBuilder::table('product', [SchemaBuilder::column('id', default: "nextval('public.product_id_seq'::regclass)")]),
+            SchemaBuilder::table('category', [SchemaBuilder::column('id', default: "nextval('\"Category_id_seq\"'::regclass)")]),
+        );
+
+        self::assertSame(IdGeneration::None, self::field(self::entity($model, 'Product'), 'id')->idGeneration);
+        self::assertSame(IdGeneration::None, self::field(self::entity($model, 'Category'), 'id')->idGeneration);
+    }
+
     /**
      * @return array{?int, ?int, int, bool, bool, ?string} length, precision, scale, unsigned, fixed, comment
      */
