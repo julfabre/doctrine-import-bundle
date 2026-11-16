@@ -95,6 +95,25 @@ final class AttributeMappingStrategyTest extends TestCase
     }
 
     #[Test]
+    public function it_renders_a_sequence_id_with_its_generator_and_without_setter(): void
+    {
+        $code = $this->render(DefinitionBuilder::entity('Product', [
+            DefinitionBuilder::field('id', 'id', 'integer', 'int', idGeneration: IdGeneration::Sequence, default: "nextval('product_id_seq'::regclass)", sequenceName: 'product_id_seq'),
+        ]));
+
+        self::assertStringContainsString(
+            "    #[ORM\\Id]\n"
+            ."    #[ORM\\GeneratedValue(strategy: 'SEQUENCE')]\n"
+            ."    #[ORM\\SequenceGenerator(sequenceName: 'product_id_seq', allocationSize: 1)]\n"
+            ."    #[ORM\\Column(name: 'id', type: Types::INTEGER, options: ['default' => 'nextval(\\'product_id_seq\\'::regclass)'])]\n"
+            .'    private ?int $id = null;',
+            $code,
+        );
+        self::assertStringContainsString("public function getId(): ?int\n", $code);
+        self::assertStringNotContainsString('function setId(', $code);
+    }
+
+    #[Test]
     public function it_renders_assigned_and_composite_ids_with_setters(): void
     {
         $code = $this->render(DefinitionBuilder::entity('OrderLine', [

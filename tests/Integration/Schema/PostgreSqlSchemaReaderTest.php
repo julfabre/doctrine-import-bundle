@@ -49,6 +49,18 @@ final class PostgreSqlSchemaReaderTest extends DatabaseTestCase
     }
 
     #[Test]
+    public function it_reads_the_nextval_default_of_a_serial_column(): void
+    {
+        $connection = $this->connect('postgresql');
+        $connection->executeStatement('CREATE TABLE product (id SERIAL PRIMARY KEY)');
+
+        $id = (new DbalSchemaReader($connection))->read(new TableFilter())->tables[0]->columns[0] ?? self::fail('Column "product.id" was not read.');
+
+        self::assertFalse($id->autoincrement);
+        self::assertSame("nextval('product_id_seq'::regclass)", $id->default);
+    }
+
+    #[Test]
     public function it_skips_a_table_with_an_unknown_column_type_and_reports_it(): void
     {
         $connection = $this->connect('postgresql');

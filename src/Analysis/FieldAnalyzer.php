@@ -24,6 +24,9 @@ final readonly class FieldAnalyzer
     /** Mapped by DBAL to the right SQL on every platform. */
     private const STANDARD_DATE_EXPRESSIONS = ['CURRENT_TIMESTAMP', 'CURRENT_DATE', 'CURRENT_TIME'];
 
+    /** PostgreSQL SERIAL: the default takes the next value of a sequence. Qualified or quoted names are left aside. */
+    private const SERIAL_DEFAULT = "/^nextval\\('([A-Za-z_][A-Za-z0-9_]*)'::regclass\\)$/";
+
     public function __construct(
         private NamingStrategyInterface $naming,
         private TypeMapper $types,
@@ -43,32 +46,52 @@ final readonly class FieldAnalyzer
             $diagnostics->report(Severity::Info, $mapped->notice, \sprintf('Column "%s.%s" of type "%s" is mapped as "%s".', $table->name, $column->name, $column->type->name, $mapped->phpType), $table->name, $column->name);
         }
 
+        $sequenceName = $this->serialSequence($table, $column);
+
         return new FieldDefinition(
             $this->naming->propertyNameForColumn($column->name),
             $column->name,
             $mapped->doctrineType,
             $mapped->phpType,
             $column->nullable,
-            $this->idGeneration($table, $column),
+            $this->idGeneration($table, $column, $sequenceName),
             new ColumnOptions(
                 $column->type->length,
                 $column->type->precision,
                 $column->type->scale,
                 $column->type->unsigned,
                 $column->type->fixed,
-                $this->defaultValue($table, $column, $mapped, $diagnostics),
+                // The nextval() default is kept: other clients of the database still insert through it.
+                null === $sequenceName ? $this->defaultValue($table, $column, $mapped, $diagnostics) : $column->default,
                 $column->comment,
             ),
+            $sequenceName,
         );
     }
 
-    private function idGeneration(TableMetadata $table, ColumnMetadata $column): ?IdGeneration
+    private function idGeneration(TableMetadata $table, ColumnMetadata $column, ?string $sequenceName): ?IdGeneration
     {
         if (!\in_array($column->name, $table->primaryKey, true)) {
             return null;
         }
 
+        if (null !== $sequenceName) {
+            return IdGeneration::Sequence;
+        }
+
         return [$column->name] === $table->primaryKey && $column->autoincrement ? IdGeneration::Identity : IdGeneration::None;
+    }
+
+    /**
+     * Doctrine DBAL does not report a SERIAL column as auto-increment: its nextval() default reveals the sequence.
+     */
+    private function serialSequence(TableMetadata $table, ColumnMetadata $column): ?string
+    {
+        if ([$column->name] !== $table->primaryKey || 1 !== preg_match(self::SERIAL_DEFAULT, $column->default ?? '', $matches)) {
+            return null;
+        }
+
+        return $matches[1];
     }
 
     /**

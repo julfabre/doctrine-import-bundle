@@ -4,6 +4,14 @@ All notable changes to this project are documented in this file. The format foll
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- PostgreSQL `SERIAL` primary keys were generated as assigned identifiers, so `persist()` failed with
+  `EntityMissingAssignedId`: Doctrine DBAL does not report them as auto-increment. They now use their existing
+  sequence (`GeneratedValue(strategy: 'SEQUENCE')`, `allocationSize: 1`) and keep their `nextval()` default.
+
 ## [0.1.0] - 2026-11-16
 
 First release.

@@ -142,9 +142,12 @@ final readonly class EntityClassBuilder
         $setter->addParameter($property)->setType($type)->setNullable($nullable && 'mixed' !== $type);
     }
 
+    /**
+     * The database sets the value: the property starts null and has no setter.
+     */
     private function isGenerated(FieldDefinition $field): bool
     {
-        return IdGeneration::Identity === $field->idGeneration;
+        return IdGeneration::Identity === $field->idGeneration || IdGeneration::Sequence === $field->idGeneration;
     }
 
     private function booleanGetterName(string $property): string
