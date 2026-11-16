@@ -117,7 +117,11 @@ final readonly class AttributeMappingStrategy implements MappingStrategyInterfac
             'precision' => $options->precision,
             'scale' => null === $options->precision ? null : $options->scale,
             'nullable' => self::flag($field->nullable),
+            // Doctrine must never write a generated column, and must read it back after each write.
+            'insertable' => $field->generated ? false : null,
+            'updatable' => $field->generated ? false : null,
             'options' => [] === $columnOptions ? null : $columnOptions,
+            'generated' => $field->generated ? 'ALWAYS' : null,
         ]);
     }
 

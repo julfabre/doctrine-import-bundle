@@ -4,6 +4,14 @@ All notable changes to this project are documented in this file. The format foll
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Generated columns (`GENERATED ALWAYS AS …`) are detected on MySQL, MariaDB and PostgreSQL and mapped
+  read-only (`insertable: false`, `updatable: false`, `generated: 'ALWAYS'`), without setter. On SQLite, where
+  Doctrine DBAL cannot read them, they are reported.
+
 ## [0.1.1] - 2026-11-16
 
 ### Fixed

@@ -36,6 +36,9 @@ class Post
     #[ORM\Column(name: 'metadata', type: Types::JSON, nullable: true)]
     private ?array $metadata = null;
 
+    #[ORM\Column(name: 'title_length', type: Types::INTEGER, nullable: true, insertable: false, updatable: false, generated: 'ALWAYS')]
+    private ?int $titleLength = null;
+
     #[ORM\ManyToOne(targetEntity: Author::class, inversedBy: 'posts')]
     #[ORM\JoinColumn(name: 'author_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
     private ?Author $author = null;
@@ -119,6 +122,11 @@ class Post
         $this->metadata = $metadata;
 
         return $this;
+    }
+
+    public function getTitleLength(): ?int
+    {
+        return $this->titleLength;
     }
 
     public function getAuthor(): ?Author

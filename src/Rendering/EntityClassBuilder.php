@@ -147,7 +147,7 @@ final readonly class EntityClassBuilder
      */
     private function isGenerated(FieldDefinition $field): bool
     {
-        return IdGeneration::Identity === $field->idGeneration || IdGeneration::Sequence === $field->idGeneration;
+        return $field->generated || IdGeneration::Identity === $field->idGeneration || IdGeneration::Sequence === $field->idGeneration;
     }
 
     private function booleanGetterName(string $property): string

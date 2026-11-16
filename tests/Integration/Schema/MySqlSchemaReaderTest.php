@@ -8,6 +8,7 @@ use Juf\DoctrineImportBundle\Diagnostic\Diagnostic;
 use Juf\DoctrineImportBundle\Schema\ColumnMetadata;
 use Juf\DoctrineImportBundle\Schema\ColumnType;
 use Juf\DoctrineImportBundle\Schema\Dbal\DbalSchemaReader;
+use Juf\DoctrineImportBundle\Schema\Dbal\GeneratedColumnsReader;
 use Juf\DoctrineImportBundle\Schema\Dbal\PlatformNameResolver;
 use Juf\DoctrineImportBundle\Schema\Dbal\TableMetadataFactory;
 use Juf\DoctrineImportBundle\Schema\IndexMetadata;
@@ -29,6 +30,7 @@ use PHPUnit\Framework\Attributes\UsesClass;
 #[UsesClass(PlatformNameResolver::class)]
 #[UsesClass(TableMetadataFactory::class)]
 #[UsesClass(TableFilter::class)]
+#[CoversClass(GeneratedColumnsReader::class)]
 final class MySqlSchemaReaderTest extends DatabaseTestCase
 {
     /**
@@ -74,6 +76,30 @@ final class MySqlSchemaReaderTest extends DatabaseTestCase
             [['table.unreadable', 'address']],
             array_map(static fn (Diagnostic $diagnostic): array => [$diagnostic->code, $diagnostic->table], $schema->diagnostics),
         );
+    }
+
+    #[Test]
+    #[DataProvider('mySqlPlatforms')]
+    public function it_reads_virtual_and_stored_generated_columns(string $platform): void
+    {
+        $connection = $this->connect($platform);
+        $connection->executeStatement('CREATE TABLE product (id INT NOT NULL PRIMARY KEY, price INT NOT NULL, price_tripled INT GENERATED ALWAYS AS (price * 3) VIRTUAL, price_doubled INT GENERATED ALWAYS AS (price * 2) STORED)');
+
+        $table = (new DbalSchemaReader($connection))->read(new TableFilter())->tables[0] ?? self::fail('Table "product" was not read.');
+
+        self::assertSame(['id' => false, 'price' => false, 'price_tripled' => true, 'price_doubled' => true], self::generatedFlags($table));
+    }
+
+    #[Test]
+    #[DataProvider('mySqlPlatforms')]
+    public function it_does_not_mark_a_column_with_a_default_and_on_update_expression_as_generated(string $platform): void
+    {
+        $connection = $this->connect($platform);
+        $connection->executeStatement('CREATE TABLE film (id INT NOT NULL PRIMARY KEY, last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)');
+
+        $table = (new DbalSchemaReader($connection))->read(new TableFilter())->tables[0] ?? self::fail('Table "film" was not read.');
+
+        self::assertSame(['id' => false, 'last_update' => false], self::generatedFlags($table));
     }
 
     #[Test]

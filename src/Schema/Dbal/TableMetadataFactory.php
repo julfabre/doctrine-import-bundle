@@ -22,14 +22,17 @@ use Juf\DoctrineImportBundle\Schema\TableMetadata;
  */
 final class TableMetadataFactory
 {
-    public function create(Table $table): TableMetadata
+    /**
+     * @param list<string> $generatedColumns names of the columns computed by the database
+     */
+    public function create(Table $table, array $generatedColumns = []): TableMetadata
     {
         $comment = $table->getComment();
         $primaryKey = $this->names($table->getPrimaryKeyConstraint()?->getColumnNames() ?? []);
 
         return new TableMetadata(
             $table->getObjectName()->getUnqualifiedName()->getValue(),
-            array_values(array_map($this->column(...), $table->getColumns())),
+            array_values(array_map(fn (Column $column): ColumnMetadata => $this->column($column, $generatedColumns), $table->getColumns())),
             $primaryKey,
             $this->indexes($table, $primaryKey),
             array_values(array_map($this->foreignKey(...), $table->getForeignKeys())),
@@ -37,13 +40,17 @@ final class TableMetadataFactory
         );
     }
 
-    private function column(Column $column): ColumnMetadata
+    /**
+     * @param list<string> $generatedColumns
+     */
+    private function column(Column $column, array $generatedColumns): ColumnMetadata
     {
         $default = $column->getDefault();
         $comment = $column->getComment();
+        $name = $column->getObjectName()->getIdentifier()->getValue();
 
         return new ColumnMetadata(
-            name: $column->getObjectName()->getIdentifier()->getValue(),
+            name: $name,
             type: new ColumnType(
                 name: $column->getTypeName(),
                 length: $column->getLength(),
@@ -56,6 +63,7 @@ final class TableMetadataFactory
             autoincrement: $column->getAutoincrement(),
             default: \is_scalar($default) ? (string) $default : null,
             comment: '' === $comment ? null : $comment,
+            generated: \in_array($name, $generatedColumns, true),
         );
     }
 

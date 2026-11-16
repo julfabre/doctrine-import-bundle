@@ -9,6 +9,7 @@ use Doctrine\DBAL\Schema\SchemaDiff;
 use Doctrine\ORM\Tools\SchemaTool;
 use Juf\DoctrineImportBundle\Tests\Integration\Schema\DatabaseTestCase;
 use Juf\DoctrineImportBundle\Tests\Integration\Schema\Fixture\BlogSchemaFixture;
+use Juf\DoctrineImportBundle\Tests\Integration\Schema\Fixture\GeneratedColumnFixture;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -27,6 +28,7 @@ final class RoundTripTest extends DatabaseTestCase
     {
         $connection = $this->connect($platform);
         BlogSchemaFixture::create($connection);
+        GeneratedColumnFixture::add($connection, $platform, 'order_line', 'quantity_doubled', 'quantity * 2');
 
         [, $entityDirectory] = $this->generateEntities($connection, $platform);
 

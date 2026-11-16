@@ -7,6 +7,7 @@ namespace Juf\DoctrineImportBundle\Tests\Integration\Schema;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Tools\DsnParser;
+use Juf\DoctrineImportBundle\Schema\TableMetadata;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -51,6 +52,19 @@ abstract class DatabaseTestCase extends TestCase
         $this->resetDatabase($connection, $platform);
 
         return $connection;
+    }
+
+    /**
+     * @return array<string, bool> generated flag by column name
+     */
+    protected static function generatedFlags(TableMetadata $table): array
+    {
+        $flags = [];
+        foreach ($table->columns as $column) {
+            $flags[$column->name] = $column->generated;
+        }
+
+        return $flags;
     }
 
     private function databaseUrl(string $platform): string

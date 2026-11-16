@@ -85,6 +85,8 @@ juf_doctrine_import:
 - Every column is named and typed explicitly. Dates use immutable types, decimals are strings.
 - Single-column foreign keys become `ManyToOne` associations with their inverse `OneToMany`
   collection (`children` for a table referencing itself).
+- Generated columns (`GENERATED ALWAYS AS …`) are read-only: `insertable: false, updatable: false`,
+  `generated: 'ALWAYS'` so that Doctrine reads the computed value back after each write, and no setter.
 - A PostgreSQL `SERIAL` primary key (default `nextval('product_id_seq'::regclass)`) keeps using its sequence:
   `GeneratedValue(strategy: 'SEQUENCE')` with `allocationSize: 1`, and the default stays mapped so that
   other clients of the database keep inserting through it.
@@ -105,6 +107,7 @@ guessed code.
 | `naming.reserved_word`, `naming.leading_digit` | warning | Class name adjusted to be valid PHP |
 | `naming.property_collision` | warning | Association renamed to avoid an existing property |
 | `column.default_expression` | warning | SQL expression default (`now()`, function call) not mapped. `CURRENT_TIMESTAMP`, `CURRENT_DATE` and `CURRENT_TIME` are mapped |
+| `column.generated_not_read` | warning | Generated column hidden from Doctrine DBAL (SQLite): not mapped |
 | `relation.on_update_not_mapped` | warning | `ON UPDATE` action of a foreign key: Doctrine cannot map it |
 | `relation.composite_foreign_key` | warning | Composite foreign key kept as scalar fields |
 | `relation.non_primary_key_target` | warning | Foreign key to a non-primary-key column, unsupported by Doctrine |
@@ -113,6 +116,7 @@ guessed code.
 | `table.outside_search_path` | warning | PostgreSQL table outside the default schema, not read |
 | `table.composite_primary_key` | info | Supported, but Doctrine advises against it |
 | `relation.one_to_one_as_many_to_one` | info | Unique foreign key mapped as `ManyToOne` |
+| `column.generated` | info | Generated column mapped read-only; its expression is not part of the mapping |
 | `column.enum_as_string`, `column.binary_as_mixed` | info | Type mapped approximately |
 | `naming.table_prefix_detected` | info | Every table shares a known prefix: configure it |
 
@@ -123,9 +127,8 @@ guessed code.
   tables, composite foreign keys and derived identities (a foreign key that is also the primary key) are
   kept as scalar fields and reported.
 - **Inheritance** is never inferred: each table becomes an independent entity.
-- **Generated columns** (`GENERATED ALWAYS AS …`) are not detected yet. On MySQL, MariaDB and PostgreSQL they
-  become ordinary fields, which Doctrine tries to write: add `insertable: false, updatable: false` by hand.
-  On SQLite they are not read at all.
+- **Generated columns on SQLite** are not read by Doctrine DBAL: they are reported
+  (`column.generated_not_read`) and missing from the entity.
 - **Unknown database types**, such as spatial types: Doctrine DBAL reads a table as a whole, so the whole
   table is skipped and reported (`table.unreadable`). Map the type with `doctrine.dbal.mapping_types`, or
   exclude the table.
