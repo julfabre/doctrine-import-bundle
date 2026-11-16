@@ -7,7 +7,8 @@ namespace Juf\DoctrineImportBundle\Schema;
 final readonly class ColumnMetadata
 {
     /**
-     * @param string|null $default raw default value as returned by the database
+     * @param string|null $default   raw default value as returned by the database
+     * @param bool        $generated true when the database computes the value (GENERATED ALWAYS AS)
      */
     public function __construct(
         public string $name,
@@ -16,6 +17,7 @@ final readonly class ColumnMetadata
         public bool $autoincrement,
         public ?string $default,
         public ?string $comment,
+        public bool $generated,
     ) {
     }
 }

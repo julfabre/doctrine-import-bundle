@@ -60,6 +60,7 @@ final class SchemaBuilder
         int $scale = 0,
         bool $unsigned = false,
         bool $fixed = false,
+        bool $generated = false,
     ): ColumnMetadata {
         return new ColumnMetadata(
             $name,
@@ -68,6 +69,7 @@ final class SchemaBuilder
             $autoincrement,
             $default,
             $comment,
+            $generated,
         );
     }
 

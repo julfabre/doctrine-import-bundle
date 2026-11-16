@@ -9,6 +9,7 @@ use Juf\DoctrineImportBundle\Diagnostic\Severity;
 use Juf\DoctrineImportBundle\Schema\ColumnMetadata;
 use Juf\DoctrineImportBundle\Schema\ColumnType;
 use Juf\DoctrineImportBundle\Schema\Dbal\DbalSchemaReader;
+use Juf\DoctrineImportBundle\Schema\Dbal\GeneratedColumnsReader;
 use Juf\DoctrineImportBundle\Schema\Dbal\PlatformNameResolver;
 use Juf\DoctrineImportBundle\Schema\Dbal\TableMetadataFactory;
 use Juf\DoctrineImportBundle\Schema\IndexMetadata;
@@ -29,6 +30,7 @@ use PHPUnit\Framework\Attributes\UsesClass;
 #[UsesClass(TableMetadataFactory::class)]
 #[UsesClass(TableFilter::class)]
 #[CoversClass(Diagnostic::class)]
+#[CoversClass(GeneratedColumnsReader::class)]
 final class PostgreSqlSchemaReaderTest extends DatabaseTestCase
 {
     #[Test]
@@ -58,6 +60,28 @@ final class PostgreSqlSchemaReaderTest extends DatabaseTestCase
 
         self::assertFalse($id->autoincrement);
         self::assertSame("nextval('product_id_seq'::regclass)", $id->default);
+    }
+
+    #[Test]
+    public function it_reads_a_stored_generated_column(): void
+    {
+        $connection = $this->connect('postgresql');
+        $connection->executeStatement('CREATE TABLE product (id INT PRIMARY KEY, price INT NOT NULL, price_doubled INT GENERATED ALWAYS AS (price * 2) STORED)');
+
+        $table = (new DbalSchemaReader($connection))->read(new TableFilter())->tables[0] ?? self::fail('Table "product" was not read.');
+
+        self::assertSame(['id' => false, 'price' => false, 'price_doubled' => true], self::generatedFlags($table));
+    }
+
+    #[Test]
+    public function it_does_not_mark_an_identity_column_as_generated(): void
+    {
+        $connection = $this->connect('postgresql');
+        $connection->executeStatement('CREATE TABLE product (id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, name TEXT NOT NULL)');
+
+        $table = (new DbalSchemaReader($connection))->read(new TableFilter())->tables[0] ?? self::fail('Table "product" was not read.');
+
+        self::assertSame(['id' => false, 'name' => false], self::generatedFlags($table));
     }
 
     #[Test]

@@ -8,6 +8,7 @@ use Doctrine\DBAL\Types\Types;
 use Juf\DoctrineImportBundle\Schema\ColumnMetadata;
 use Juf\DoctrineImportBundle\Schema\ColumnType;
 use Juf\DoctrineImportBundle\Schema\Dbal\DbalSchemaReader;
+use Juf\DoctrineImportBundle\Schema\Dbal\GeneratedColumnsReader;
 use Juf\DoctrineImportBundle\Schema\Dbal\PlatformNameResolver;
 use Juf\DoctrineImportBundle\Schema\Dbal\TableMetadataFactory;
 use Juf\DoctrineImportBundle\Schema\ForeignKeyMetadata;
@@ -31,6 +32,7 @@ use PHPUnit\Framework\Attributes\UsesClass;
 #[CoversClass(IndexMetadata::class)]
 #[CoversClass(ForeignKeyMetadata::class)]
 #[UsesClass(TableFilter::class)]
+#[UsesClass(GeneratedColumnsReader::class)]
 final class DbalSchemaReaderTest extends DatabaseTestCase
 {
     #[Test]

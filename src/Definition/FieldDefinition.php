@@ -20,6 +20,7 @@ final readonly class FieldDefinition
         public bool $nullable,
         public ?IdGeneration $idGeneration,
         public ColumnOptions $options,
+        public bool $generated,
         public ?string $sequenceName = null,
     ) {
     }

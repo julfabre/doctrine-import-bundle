@@ -114,6 +114,19 @@ final class AttributeMappingStrategyTest extends TestCase
     }
 
     #[Test]
+    public function it_renders_a_generated_field_as_a_read_only_property_refreshed_after_each_write(): void
+    {
+        $code = $this->render(DefinitionBuilder::entity('Product', [
+            DefinitionBuilder::identityId(),
+            DefinitionBuilder::field('priceDoubled', 'price_doubled', 'integer', 'int', generated: true),
+        ]));
+
+        self::assertStringContainsString("    #[ORM\\Column(name: 'price_doubled', type: Types::INTEGER, insertable: false, updatable: false, generated: 'ALWAYS')]\n    private ?int \$priceDoubled = null;", $code);
+        self::assertStringContainsString("public function getPriceDoubled(): ?int\n    {\n        return \$this->priceDoubled;\n    }", $code);
+        self::assertStringNotContainsString('function setPriceDoubled(', $code);
+    }
+
+    #[Test]
     public function it_renders_assigned_and_composite_ids_with_setters(): void
     {
         $code = $this->render(DefinitionBuilder::entity('OrderLine', [

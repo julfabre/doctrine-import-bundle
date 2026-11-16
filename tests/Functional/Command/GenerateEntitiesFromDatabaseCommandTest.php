@@ -45,6 +45,7 @@ use Juf\DoctrineImportBundle\Rendering\RepositoryClassBuilder;
 use Juf\DoctrineImportBundle\Schema\ColumnMetadata;
 use Juf\DoctrineImportBundle\Schema\ColumnType;
 use Juf\DoctrineImportBundle\Schema\Dbal\DbalSchemaReader;
+use Juf\DoctrineImportBundle\Schema\Dbal\GeneratedColumnsReader;
 use Juf\DoctrineImportBundle\Schema\Dbal\PlatformNameResolver;
 use Juf\DoctrineImportBundle\Schema\Dbal\TableMetadataFactory;
 use Juf\DoctrineImportBundle\Schema\ForeignKeyMetadata;
@@ -116,6 +117,7 @@ use Symfony\Component\HttpKernel\KernelInterface;
 #[UsesClass(OutputLocation::class)]
 #[UsesClass(WriteOptions::class)]
 #[UsesClass(WrittenFile::class)]
+#[UsesClass(GeneratedColumnsReader::class)]
 final class GenerateEntitiesFromDatabaseCommandTest extends KernelTestCase
 {
     private const COMMAND_NAME = 'generate:entities:from-database';
