@@ -116,8 +116,16 @@ guessed code.
 ## Known limitations
 
 - **Associations**: only single-column foreign keys to a primary key become associations, as `ManyToOne` /
-  `OneToMany`. One-to-one, many-to-many join tables, composite foreign keys and derived identities are
+  `OneToMany`. A unique foreign key (one-to-one) is mapped as `ManyToOne` and reported. Many-to-many join
+  tables, composite foreign keys and derived identities (a foreign key that is also the primary key) are
   kept as scalar fields and reported.
+- **Inheritance** is never inferred: each table becomes an independent entity.
+- **Generated columns** (`GENERATED ALWAYS AS …`) are not detected yet. On MySQL, MariaDB and PostgreSQL they
+  become ordinary fields, which Doctrine tries to write: add `insertable: false, updatable: false` by hand.
+  On SQLite they are not read at all.
+- **Unknown database types**, such as spatial types: Doctrine DBAL reads a table as a whole, so the whole
+  table is skipped and reported (`table.unreadable`). Map the type with `doctrine.dbal.mapping_types`, or
+  exclude the table.
 - **`ON UPDATE` actions** of foreign keys cannot be expressed with Doctrine: they are lost if the schema is
   later created from the entities.
 - **Enums**: MySQL `ENUM` columns become `string` (the allowed values are not kept); `SET` columns become
