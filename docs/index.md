@@ -85,6 +85,9 @@ juf_doctrine_import:
 - Every column is named and typed explicitly. Dates use immutable types, decimals are strings.
 - Single-column foreign keys become `ManyToOne` associations with their inverse `OneToMany`
   collection (`children` for a table referencing itself).
+- A PostgreSQL `SERIAL` primary key (default `nextval('product_id_seq'::regclass)`) keeps using its sequence:
+  `GeneratedValue(strategy: 'SEQUENCE')` with `allocationSize: 1`, and the default stays mapped so that
+  other clients of the database keep inserting through it.
 - The code runs on PHP 8.2.
 
 ## Diagnostics
