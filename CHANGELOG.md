@@ -4,7 +4,7 @@ All notable changes to this project are documented in this file. The format foll
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.1] - 2026-11-16
 
 ### Fixed
 
@@ -31,4 +31,5 @@ First release.
 - Support for PHP 8.2 to 8.5, Symfony 6.4 to 8, Doctrine ORM 3, DBAL 4.6+, on PostgreSQL, MySQL, MariaDB and
   SQLite.
 
+[0.1.1]: https://github.com/julfabre/doctrine-import-bundle/releases/tag/v0.1.1
 [0.1.0]: https://github.com/julfabre/doctrine-import-bundle/releases/tag/v0.1.0
