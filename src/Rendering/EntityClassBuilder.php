@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Juf\DoctrineImportBundle\Rendering;
 
+use Closure;
 use Doctrine\Inflector\Inflector;
 use Doctrine\Inflector\InflectorFactory;
 use Juf\DoctrineImportBundle\Definition\EntityDefinition;
 use Juf\DoctrineImportBundle\Definition\EnumDefinition;
 use Juf\DoctrineImportBundle\Definition\FieldDefinition;
 use Juf\DoctrineImportBundle\Definition\IdGeneration;
+use Juf\DoctrineImportBundle\Definition\ManyToOneDefinition;
 use Juf\DoctrineImportBundle\Definition\OneToManyDefinition;
 use Nette\PhpGenerator\ClassType;
 use Nette\PhpGenerator\Literal;
@@ -44,12 +46,8 @@ final readonly class EntityClassBuilder
             )));
         }
 
-        foreach ($entity->fields as $field) {
-            $this->addField($class, $field, $this->propertyType($field, $namespace, $options));
-        }
-
-        foreach ($entity->manyToOne as $association) {
-            $this->addToOne($class, $association->propertyName, $namespace->getName().'\\'.$association->targetEntity);
+        foreach ($this->fieldsAndManyToOne($class, $entity, $namespace, $options) as [, $declare]) {
+            $declare();
         }
 
         foreach ($entity->oneToOne as $association) {
@@ -68,8 +66,32 @@ final readonly class EntityClassBuilder
     }
 
     /**
-     * @param string $type PHP type of the property, fully qualified for an enum
+     * Doctrine builds the primary key in the declaration order of the identifiers: they come first, in key order.
+     *
+     * @return list<array{string, Closure(): void}> column and declaration of each field and ManyToOne association
      */
+    private function fieldsAndManyToOne(ClassType $class, EntityDefinition $entity, PhpNamespace $namespace, RenderingOptions $options): array
+    {
+        $members = [
+            ...array_map(fn (FieldDefinition $field): array => [
+                $field->columnName,
+                fn () => $this->addField($class, $field, $this->propertyType($field, $namespace, $options)),
+            ], $entity->fields),
+            ...array_map(fn (ManyToOneDefinition $association): array => [
+                $association->joinColumn,
+                fn () => $this->addToOne($class, $association->propertyName, $namespace->getName().'\\'.$association->targetEntity),
+            ], $entity->manyToOne),
+        ];
+        $rank = static function (string $column) use ($entity): int {
+            $position = array_search($column, $entity->primaryKey, true);
+
+            return false === $position ? \PHP_INT_MAX : $position;
+        };
+        usort($members, static fn (array $left, array $right): int => $rank($left[0]) <=> $rank($right[0]));
+
+        return $members;
+    }
+
     private function addField(ClassType $class, FieldDefinition $field, string $type): void
     {
         $nullable = $field->nullable || $this->isGenerated($field);

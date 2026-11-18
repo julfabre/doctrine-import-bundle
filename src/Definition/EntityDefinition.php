@@ -6,6 +6,9 @@ namespace Juf\DoctrineImportBundle\Definition;
 
 final readonly class EntityDefinition
 {
+    /** Always the class name followed by "Repository". */
+    public string $repositoryClassName;
+
     /**
      * @param string                     $className  short class name, without namespace
      * @param list<FieldDefinition>      $fields     in column order
@@ -14,11 +17,11 @@ final readonly class EntityDefinition
      * @param list<IndexDefinition>      $indexes
      * @param list<OneToOneDefinition>   $oneToOne
      * @param list<ManyToManyDefinition> $manyToMany
+     * @param list<string>               $primaryKey columns of the primary key, in key order
      */
     public function __construct(
         public string $className,
         public string $tableName,
-        public string $repositoryClassName,
         public array $fields,
         public array $manyToOne,
         public array $oneToMany,
@@ -26,7 +29,9 @@ final readonly class EntityDefinition
         public ?string $comment,
         public array $oneToOne = [],
         public array $manyToMany = [],
+        public array $primaryKey = [],
     ) {
+        $this->repositoryClassName = $className.'Repository';
     }
 
     /**
@@ -40,7 +45,6 @@ final readonly class EntityDefinition
         return new self(
             $this->className,
             $this->tableName,
-            $this->repositoryClassName,
             $fields,
             $manyToOne,
             $oneToMany,
@@ -48,6 +52,7 @@ final readonly class EntityDefinition
             $this->comment,
             $oneToOne,
             $this->manyToMany,
+            $this->primaryKey,
         );
     }
 
@@ -59,7 +64,6 @@ final readonly class EntityDefinition
         return new self(
             $this->className,
             $this->tableName,
-            $this->repositoryClassName,
             $this->fields,
             $this->manyToOne,
             $this->oneToMany,
@@ -67,6 +71,7 @@ final readonly class EntityDefinition
             $this->comment,
             $this->oneToOne,
             $manyToMany,
+            $this->primaryKey,
         );
     }
 }

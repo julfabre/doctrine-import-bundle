@@ -18,6 +18,7 @@ use Juf\DoctrineImportBundle\Definition\ColumnOptions;
 use Juf\DoctrineImportBundle\Definition\EntityDefinition;
 use Juf\DoctrineImportBundle\Definition\FieldDefinition;
 use Juf\DoctrineImportBundle\Definition\GenerationModel;
+use Juf\DoctrineImportBundle\Definition\IdGeneration;
 use Juf\DoctrineImportBundle\Definition\IndexDefinition;
 use Juf\DoctrineImportBundle\Definition\ManyToOneDefinition;
 use Juf\DoctrineImportBundle\Definition\OneToManyDefinition;
@@ -245,6 +246,50 @@ final class RelationAnalyzerTest extends TestCase
     }
 
     #[Test]
+    public function it_maps_a_foreign_key_in_a_composite_primary_key_to_an_identifier_association(): void
+    {
+        $model = $this->analyze($this->film(), $this->actor(), $this->filmActor());
+
+        $filmActor = self::entity($model, 'FilmActor');
+        self::assertSame(['film', 'actor'], array_map(static fn (ManyToOneDefinition $association): string => $association->propertyName, $filmActor->manyToOne));
+        self::assertSame([false, false], array_map(static fn (ManyToOneDefinition $association): bool => $association->nullable, $filmActor->manyToOne));
+        self::assertSame(['lastUpdate'], self::propertyNames($filmActor));
+        self::assertSame([['info', 'table.composite_primary_key', 'film_actor', null]], self::diagnostics($model));
+    }
+
+    #[Test]
+    public function it_mixes_scalar_and_association_identifiers(): void
+    {
+        $model = $this->analyze($this->film(), SchemaBuilder::table('order_item', [
+            SchemaBuilder::column('film_id'),
+            SchemaBuilder::column('line_no'),
+        ], primaryKey: ['film_id', 'line_no'], foreignKeys: [SchemaBuilder::foreignKey(['film_id'], 'film')]));
+
+        $orderItem = self::entity($model, 'OrderItem');
+        self::assertSame('film', self::onlyManyToOne($orderItem)->propertyName);
+        self::assertSame(IdGeneration::None, self::field($orderItem, 'lineNo')->idGeneration);
+        self::assertSame(['film_id', 'line_no'], $orderItem->primaryKey);
+    }
+
+    #[Test]
+    public function it_adds_the_inverse_collection_of_an_identifier_association(): void
+    {
+        $model = $this->analyze($this->film(), $this->actor(), $this->filmActor());
+
+        self::assertEquals([new OneToManyDefinition('filmActors', 'FilmActor', 'film')], self::entity($model, 'Film')->oneToMany);
+    }
+
+    #[Test]
+    public function it_never_maps_a_unique_foreign_key_of_a_composite_primary_key_to_a_one_to_one(): void
+    {
+        $model = $this->analyze($this->film(), $this->actor(), $this->filmActor([new IndexMetadata('uniq_film_actor_film', ['film_id'], unique: true)]));
+
+        $filmActor = self::entity($model, 'FilmActor');
+        self::assertSame([], $filmActor->oneToOne);
+        self::assertSame(['film', 'actor'], array_map(static fn (ManyToOneDefinition $association): string => $association->propertyName, $filmActor->manyToOne));
+    }
+
+    #[Test]
     public function it_keeps_a_primary_key_column_as_id_when_it_is_also_a_foreign_key(): void
     {
         $model = $this->analyze(SchemaBuilder::table('order', [SchemaBuilder::id()]), SchemaBuilder::table('order_detail', [SchemaBuilder::column('order_id'), SchemaBuilder::column('note', 'text')], primaryKey: ['order_id'], foreignKeys: [
@@ -255,6 +300,10 @@ final class RelationAnalyzerTest extends TestCase
         self::assertTrue(self::field($detail, 'orderId')->isId());
         self::assertSame([], $detail->manyToOne);
         self::assertSame([['warning', 'relation.foreign_key_in_primary_key', 'order_detail', 'order_id']], self::diagnostics($model));
+        self::assertSame(
+            'Column "order_detail.order_id" forms the whole primary key and a foreign key, a OneToOne sharing its primary key that is not generated yet: it is kept as a scalar field.',
+            $model->diagnostics[0]->message ?? null,
+        );
     }
 
     #[Test]
@@ -374,6 +423,31 @@ final class RelationAnalyzerTest extends TestCase
         ], foreignKeys: [SchemaBuilder::foreignKey(['author_id'], 'author', onDelete: $onDelete)], indexes: [
             new IndexMetadata('uniq_profile_author', ['author_id'], unique: true),
         ]);
+    }
+
+    private function film(): TableMetadata
+    {
+        return SchemaBuilder::table('film', [SchemaBuilder::id()]);
+    }
+
+    private function actor(): TableMetadata
+    {
+        return SchemaBuilder::table('actor', [SchemaBuilder::id()]);
+    }
+
+    /**
+     * @param list<IndexMetadata> $indexes
+     */
+    private function filmActor(array $indexes = []): TableMetadata
+    {
+        return SchemaBuilder::table('film_actor', [
+            SchemaBuilder::column('actor_id'),
+            SchemaBuilder::column('film_id'),
+            SchemaBuilder::column('last_update', 'datetime'),
+        ], primaryKey: ['actor_id', 'film_id'], foreignKeys: [
+            SchemaBuilder::foreignKey(['film_id'], 'film'),
+            SchemaBuilder::foreignKey(['actor_id'], 'actor'),
+        ], indexes: $indexes);
     }
 
     private function post(): TableMetadata

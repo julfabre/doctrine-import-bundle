@@ -96,6 +96,10 @@ juf_doctrine_import:
   owning side with its `JoinTable`, and `Tag::$posts`, mapped by it. The table of the first primary key column
   owns the association. `Tag::addPost()` / `removePost()` also update the owning side. A table joining a table
   to itself only gets the owning side (`User::$friends`), to be named by hand on the other side.
+- A foreign key that is part of a composite primary key becomes an identifier association (derived identity):
+  `film_actor(actor_id, film_id, last_update)` gives `FilmActor::$actor` and `FilmActor::$film`, both
+  `#[ORM\Id]` + `#[ORM\ManyToOne]`. Identifier properties come first, in primary key order: Doctrine builds the
+  primary key in that order.
 - A MySQL or MariaDB `ENUM` column becomes a string-backed PHP enum named after the entity and the property
   (`film.rating` → `FilmRating`, cases `G`, `Pg13`…), mapped with `type: Types::ENUM, enumType: FilmRating::class`.
   One enum per column, even when two columns share the same values.
@@ -125,7 +129,7 @@ guessed code.
 | `relation.on_update_not_mapped` | warning | `ON UPDATE` action of a foreign key: Doctrine cannot map it |
 | `relation.composite_foreign_key` | warning | Composite foreign key kept as scalar fields |
 | `relation.non_primary_key_target` | warning | Foreign key to a non-primary-key column, unsupported by Doctrine |
-| `relation.foreign_key_in_primary_key` | warning | Derived identity, not mapped as an association yet |
+| `relation.foreign_key_in_primary_key` | warning | Foreign key forming the whole primary key (a `OneToOne` sharing its primary key), not mapped as an association yet |
 | `relation.missing_target` | warning | Foreign key to a table that is not generated |
 | `table.outside_search_path` | warning | PostgreSQL table outside the default schema, not read |
 | `table.composite_primary_key` | info | Supported, but Doctrine advises against it |
@@ -143,8 +147,9 @@ guessed code.
 
 - **Associations**: only single-column foreign keys to a primary key become associations, as `ManyToOne` /
   `OneToMany`, as an owning `OneToOne` when the foreign key is unique, and pure join tables as `ManyToMany`.
-  Join tables with extra columns, composite foreign keys and derived identities (a foreign key that is also
-  the primary key) are kept as scalar fields and reported.
+  A foreign key in a composite primary key becomes an identifier association. Composite foreign keys, and a
+  foreign key forming the whole primary key (a `OneToOne` sharing its primary key), are kept as scalar fields
+  and reported.
 - **Join table indexes**: a `ManyToMany` mapping cannot name the indexes of its join table. An index other than
   the primary key (MySQL creates one for each foreign key) would be renamed by `doctrine:schema:update`.
 - **Inheritance** is never inferred: each table becomes an independent entity.

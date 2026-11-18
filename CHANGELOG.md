@@ -19,6 +19,8 @@ All notable changes to this project are documented in this file. The format foll
 - A pure join table becomes a `ManyToMany` association instead of an entity with two scalar fields: the table
   of the first primary key column owns it, the other side is mapped by it, and a table joining itself only gets
   the owning side.
+- A foreign key that is part of a composite primary key becomes an identifier association (derived identity),
+  such as `film_actor` in Sakila, instead of a scalar field.
 
 ### Changed
 
@@ -27,6 +29,12 @@ All notable changes to this project are documented in this file. The format foll
   must implement them.
 - The `relation.one_to_one_as_many_to_one` diagnostic is replaced by `relation.one_to_one_without_inverse_side`.
 - `column.enum_as_string` is now a warning, reported only when an `ENUM` column cannot become a PHP enum.
+
+### Fixed
+
+- The properties of a composite identifier are declared in primary key order, not in column order: Doctrine
+  builds the primary key in declaration order, so `doctrine:schema:update` recreated a primary key whose columns
+  were in another order.
 
 ## [0.1.1] - 2026-11-16
 

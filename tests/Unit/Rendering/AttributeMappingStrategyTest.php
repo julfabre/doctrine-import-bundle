@@ -165,7 +165,9 @@ final class AttributeMappingStrategyTest extends TestCase
         $code = $this->render(DefinitionBuilder::entity('Profile', oneToOne: [new OneToOneDefinition('author', 'Author', 'author_id', 'id', false, 'CASCADE')]));
 
         self::assertStringContainsString(
-            "    #[ORM\\OneToOne(targetEntity: Author::class)]\n"
+            // A OneToOne is never an identifier: nothing but the previous property comes before its attribute.
+            "    private ?int \$id = null;\n\n"
+            ."    #[ORM\\OneToOne(targetEntity: Author::class)]\n"
             ."    #[ORM\\JoinColumn(name: 'author_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]\n"
             .'    private ?Author $author = null;',
             $code,

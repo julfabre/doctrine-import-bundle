@@ -69,12 +69,12 @@ final readonly class EntityAnalyzer
         return new EntityDefinition(
             $className,
             $table->name,
-            $className.'Repository',
             $fields,
             [],
             [],
             array_map(static fn (IndexMetadata $index): IndexDefinition => new IndexDefinition($index->name, $index->columns, $index->unique, $index->flags), $table->indexes),
             $table->comment,
+            primaryKey: $table->primaryKey,
         );
     }
 

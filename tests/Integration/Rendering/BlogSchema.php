@@ -25,6 +25,7 @@ final class BlogSchema
             self::category(),
             self::orderLine(),
             self::post(),
+            self::postRevision(),
             self::postTag(),
             self::tag(),
         ]));
@@ -88,6 +89,15 @@ final class BlogSchema
             SchemaBuilder::foreignKey(['author_id'], 'author', onDelete: 'CASCADE'),
             SchemaBuilder::foreignKey(['category_id'], 'category'),
         ], indexes: [new IndexMetadata('idx_post_author', ['author_id'], unique: false)]);
+    }
+
+    private static function postRevision(): TableMetadata
+    {
+        return SchemaBuilder::table('post_revision', [
+            SchemaBuilder::column('revision'),
+            SchemaBuilder::column('post_id'),
+            SchemaBuilder::column('body', 'text'),
+        ], primaryKey: ['post_id', 'revision'], foreignKeys: [SchemaBuilder::foreignKey(['post_id'], 'post', onDelete: 'CASCADE')]);
     }
 
     private static function postTag(): TableMetadata

@@ -53,6 +53,10 @@ class Post
     #[ORM\JoinColumn(name: 'category_id', referencedColumnName: 'id', nullable: true)]
     private ?Category $category = null;
 
+    /** @var Collection<int, PostRevision> */
+    #[ORM\OneToMany(targetEntity: PostRevision::class, mappedBy: 'post')]
+    private Collection $postRevisions;
+
     /** @var Collection<int, Tag> */
     #[ORM\ManyToMany(targetEntity: Tag::class, inversedBy: 'posts')]
     #[ORM\JoinTable(name: 'post_tag')]
@@ -62,6 +66,7 @@ class Post
 
     public function __construct()
     {
+        $this->postRevisions = new ArrayCollection();
         $this->tags = new ArrayCollection();
     }
 
@@ -179,6 +184,34 @@ class Post
     public function setCategory(?Category $category): static
     {
         $this->category = $category;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, PostRevision>
+     */
+    public function getPostRevisions(): Collection
+    {
+        return $this->postRevisions;
+    }
+
+    public function addPostRevision(PostRevision $postRevision): static
+    {
+        if (!$this->postRevisions->contains($postRevision)) {
+            $this->postRevisions->add($postRevision);
+            $postRevision->setPost($this);
+        }
+
+        return $this;
+    }
+
+    public function removePostRevision(PostRevision $postRevision): static
+    {
+        // Unset the owning side, unless it already points to another entity.
+        if ($this->postRevisions->removeElement($postRevision) && $this === $postRevision->getPost()) {
+            $postRevision->setPost(null);
+        }
 
         return $this;
     }
