@@ -9,6 +9,7 @@ use Doctrine\DBAL\Schema\SchemaDiff;
 use Doctrine\ORM\Tools\SchemaTool;
 use Juf\DoctrineImportBundle\Tests\Integration\Schema\DatabaseTestCase;
 use Juf\DoctrineImportBundle\Tests\Integration\Schema\Fixture\BlogSchemaFixture;
+use Juf\DoctrineImportBundle\Tests\Integration\Schema\Fixture\DerivedIdentitySchemaFixture;
 use Juf\DoctrineImportBundle\Tests\Integration\Schema\Fixture\GeneratedColumnFixture;
 use Juf\DoctrineImportBundle\Tests\Integration\Schema\Fixture\ManyToManySchemaFixture;
 use Juf\DoctrineImportBundle\Tests\Integration\Schema\Fixture\OneToOneSchemaFixture;
@@ -55,6 +56,18 @@ final class RoundTripTest extends DatabaseTestCase
     {
         $connection = $this->connect($platform);
         ManyToManySchemaFixture::create($connection);
+
+        [, $entityDirectory] = $this->generateEntities($connection, $platform);
+
+        $this->assertNoDifference($this->diff($connection, $entityDirectory));
+    }
+
+    #[Test]
+    #[DataProvider('allPlatforms')]
+    public function it_regenerates_composite_primary_keys_in_their_order(string $platform): void
+    {
+        $connection = $this->connect($platform);
+        DerivedIdentitySchemaFixture::create($connection);
 
         [, $entityDirectory] = $this->generateEntities($connection, $platform);
 

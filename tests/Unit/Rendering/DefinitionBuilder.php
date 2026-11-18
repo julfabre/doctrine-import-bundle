@@ -27,6 +27,7 @@ final class DefinitionBuilder
      * @param list<IndexDefinition>      $indexes
      * @param list<OneToOneDefinition>   $oneToOne
      * @param list<ManyToManyDefinition> $manyToMany
+     * @param list<string>|null          $primaryKey defaults to the columns of the identifier fields
      */
     public static function entity(
         string $className,
@@ -38,18 +39,24 @@ final class DefinitionBuilder
         ?string $comment = null,
         array $oneToOne = [],
         array $manyToMany = [],
+        ?array $primaryKey = null,
     ): EntityDefinition {
+        $fields = [] === $fields ? [self::identityId()] : $fields;
+
         return new EntityDefinition(
             $className,
             $tableName ?? strtolower($className),
-            $className.'Repository',
-            [] === $fields ? [self::identityId()] : $fields,
+            $fields,
             $manyToOne,
             $oneToMany,
             $indexes,
             $comment,
             $oneToOne,
             $manyToMany,
+            $primaryKey ?? array_values(array_map(
+                static fn (FieldDefinition $field): string => $field->columnName,
+                array_filter($fields, static fn (FieldDefinition $field): bool => $field->isId()),
+            )),
         );
     }
 

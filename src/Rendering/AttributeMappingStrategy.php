@@ -51,7 +51,9 @@ final readonly class AttributeMappingStrategy implements MappingStrategyInterfac
         }
 
         foreach ($entity->manyToOne as $association) {
-            self::mapToOne($class, 'ManyToOne', $association->propertyName, $association->targetEntity, $association->inversedBy, [
+            // A foreign key in the primary key is a derived identity.
+            $identifier = \in_array($association->joinColumn, $entity->primaryKey, true);
+            self::mapToOne($class, 'ManyToOne', $association->propertyName, $association->targetEntity, $association->inversedBy, $identifier, [
                 'name' => $association->joinColumn,
                 'referencedColumnName' => $association->referencedColumn,
                 'nullable' => $association->nullable,
@@ -60,7 +62,7 @@ final readonly class AttributeMappingStrategy implements MappingStrategyInterfac
         }
 
         foreach ($entity->oneToOne as $association) {
-            self::mapToOne($class, 'OneToOne', $association->propertyName, $association->targetEntity, null, [
+            self::mapToOne($class, 'OneToOne', $association->propertyName, $association->targetEntity, null, false, [
                 'name' => $association->joinColumn,
                 'referencedColumnName' => $association->referencedColumn,
                 'nullable' => $association->nullable,
@@ -149,9 +151,13 @@ final readonly class AttributeMappingStrategy implements MappingStrategyInterfac
      * @param 'ManyToOne'|'OneToOne' $type
      * @param array<string, mixed>   $joinColumn
      */
-    private static function mapToOne(ClassType $class, string $type, string $propertyName, string $targetEntity, ?string $inversedBy, array $joinColumn): void
+    private static function mapToOne(ClassType $class, string $type, string $propertyName, string $targetEntity, ?string $inversedBy, bool $identifier, array $joinColumn): void
     {
         $property = $class->getProperty($propertyName);
+        if ($identifier) {
+            $property->addAttribute(self::ORM.'\\Id');
+        }
+
         $property->addAttribute(self::ORM.'\\'.$type, self::withoutNulls([
             'targetEntity' => new Literal($targetEntity.'::class'),
             'inversedBy' => $inversedBy,

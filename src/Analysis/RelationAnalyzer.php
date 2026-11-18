@@ -67,7 +67,7 @@ final readonly class RelationAnalyzer
             return;
         }
 
-        $isOneToOne = $this->isUnique($table, $column);
+        $isOneToOne = $this->isUnique($table, $column) && !\in_array($column, $table->primaryKey, true);
         if ($isOneToOne) {
             // The inverse side of a OneToOne cannot be lazy: generating it would load the owning entity every time.
             $diagnostics->report(Severity::Info, 'relation.one_to_one_without_inverse_side', \sprintf('Column "%s.%s" is mapped as a OneToOne association without inverse side: Doctrine always loads the inverse side of a OneToOne, add it by hand if needed.', $table->name, $column), $table->name, $column);
@@ -115,8 +115,9 @@ final readonly class RelationAnalyzer
             return ['relation.non_primary_key_target', \sprintf('references a column of "%s" that is not its primary key, which Doctrine does not support', $foreignKey->foreignTable)];
         }
 
-        if (\in_array($foreignKey->localColumns[0], $table->primaryKey, true)) {
-            return ['relation.foreign_key_in_primary_key', 'is both a primary key and a foreign key: derived identities are not supported yet'];
+        // A foreign key in a composite primary key is a derived identity, mapped as an identifier association.
+        if ([$foreignKey->localColumns[0]] === $table->primaryKey) {
+            return ['relation.foreign_key_in_primary_key', 'forms the whole primary key and a foreign key, a OneToOne sharing its primary key that is not generated yet'];
         }
 
         return null;

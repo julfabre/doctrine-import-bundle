@@ -140,6 +140,17 @@ final class EntityAnalyzerTest extends TestCase
     }
 
     #[Test]
+    public function it_keeps_the_primary_key_columns_in_key_order(): void
+    {
+        $model = $this->analyze(SchemaBuilder::table('order_line', [
+            SchemaBuilder::column('order_id'),
+            SchemaBuilder::column('product_id'),
+        ], primaryKey: ['product_id', 'order_id']));
+
+        self::assertSame(['product_id', 'order_id'], self::entity($model, 'OrderLine')->primaryKey);
+    }
+
+    #[Test]
     public function it_skips_a_table_without_primary_key_with_an_error(): void
     {
         $model = $this->analyze(SchemaBuilder::table('audit_log', [SchemaBuilder::column('message', 'text')], primaryKey: []), SchemaBuilder::table('user', [SchemaBuilder::id()]));
