@@ -10,6 +10,7 @@ use Doctrine\ORM\Tools\SchemaTool;
 use Juf\DoctrineImportBundle\Tests\Integration\Schema\DatabaseTestCase;
 use Juf\DoctrineImportBundle\Tests\Integration\Schema\Fixture\BlogSchemaFixture;
 use Juf\DoctrineImportBundle\Tests\Integration\Schema\Fixture\GeneratedColumnFixture;
+use Juf\DoctrineImportBundle\Tests\Integration\Schema\Fixture\ManyToManySchemaFixture;
 use Juf\DoctrineImportBundle\Tests\Integration\Schema\Fixture\OneToOneSchemaFixture;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -42,6 +43,18 @@ final class RoundTripTest extends DatabaseTestCase
     {
         $connection = $this->connect($platform);
         OneToOneSchemaFixture::create($connection);
+
+        [, $entityDirectory] = $this->generateEntities($connection, $platform);
+
+        $this->assertNoDifference($this->diff($connection, $entityDirectory));
+    }
+
+    #[Test]
+    #[DataProvider('allPlatforms')]
+    public function it_regenerates_a_many_to_many_association(string $platform): void
+    {
+        $connection = $this->connect($platform);
+        ManyToManySchemaFixture::create($connection);
 
         [, $entityDirectory] = $this->generateEntities($connection, $platform);
 

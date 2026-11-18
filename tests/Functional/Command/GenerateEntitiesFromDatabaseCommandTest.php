@@ -11,6 +11,8 @@ use Juf\DoctrineImportBundle\Analysis\ClassNameResolver;
 use Juf\DoctrineImportBundle\Analysis\EntityAnalyzer;
 use Juf\DoctrineImportBundle\Analysis\EnumAnalyzer;
 use Juf\DoctrineImportBundle\Analysis\FieldAnalyzer;
+use Juf\DoctrineImportBundle\Analysis\JoinTableDetector;
+use Juf\DoctrineImportBundle\Analysis\ManyToManyAnalyzer;
 use Juf\DoctrineImportBundle\Analysis\MappedType;
 use Juf\DoctrineImportBundle\Analysis\Naming\ClassName;
 use Juf\DoctrineImportBundle\Analysis\Naming\DefaultNamingStrategy;
@@ -120,6 +122,8 @@ use Symfony\Component\HttpKernel\KernelInterface;
 #[UsesClass(WrittenFile::class)]
 #[UsesClass(GeneratedColumnsReader::class)]
 #[UsesClass(EnumAnalyzer::class)]
+#[UsesClass(JoinTableDetector::class)]
+#[UsesClass(ManyToManyAnalyzer::class)]
 final class GenerateEntitiesFromDatabaseCommandTest extends KernelTestCase
 {
     private const COMMAND_NAME = 'generate:entities:from-database';

@@ -28,6 +28,7 @@ final readonly class AttributeMappingStrategy implements MappingStrategyInterfac
 
     public function __construct(
         private EntityClassBuilder $classBuilder = new EntityClassBuilder(),
+        private ManyToManyAttributes $manyToManyAttributes = new ManyToManyAttributes(),
     ) {
     }
 
@@ -69,6 +70,10 @@ final readonly class AttributeMappingStrategy implements MappingStrategyInterfac
 
         foreach ($entity->oneToMany as $collection) {
             self::mapOneToMany($class, $collection);
+        }
+
+        foreach ($entity->manyToMany as $collection) {
+            $this->manyToManyAttributes->add($class, $collection);
         }
 
         return [new GeneratedFile($options->entityNamespace.'\\'.$entity->className, (new PsrPrinter())->printFile($file))];

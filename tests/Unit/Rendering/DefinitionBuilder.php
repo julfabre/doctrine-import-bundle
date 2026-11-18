@@ -10,6 +10,7 @@ use Juf\DoctrineImportBundle\Definition\EnumDefinition;
 use Juf\DoctrineImportBundle\Definition\FieldDefinition;
 use Juf\DoctrineImportBundle\Definition\IdGeneration;
 use Juf\DoctrineImportBundle\Definition\IndexDefinition;
+use Juf\DoctrineImportBundle\Definition\ManyToManyDefinition;
 use Juf\DoctrineImportBundle\Definition\ManyToOneDefinition;
 use Juf\DoctrineImportBundle\Definition\OneToManyDefinition;
 use Juf\DoctrineImportBundle\Definition\OneToOneDefinition;
@@ -20,11 +21,12 @@ use Juf\DoctrineImportBundle\Definition\OneToOneDefinition;
 final class DefinitionBuilder
 {
     /**
-     * @param list<FieldDefinition>     $fields
-     * @param list<ManyToOneDefinition> $manyToOne
-     * @param list<OneToManyDefinition> $oneToMany
-     * @param list<IndexDefinition>     $indexes
-     * @param list<OneToOneDefinition>  $oneToOne
+     * @param list<FieldDefinition>      $fields
+     * @param list<ManyToOneDefinition>  $manyToOne
+     * @param list<OneToManyDefinition>  $oneToMany
+     * @param list<IndexDefinition>      $indexes
+     * @param list<OneToOneDefinition>   $oneToOne
+     * @param list<ManyToManyDefinition> $manyToMany
      */
     public static function entity(
         string $className,
@@ -35,6 +37,7 @@ final class DefinitionBuilder
         ?string $tableName = null,
         ?string $comment = null,
         array $oneToOne = [],
+        array $manyToMany = [],
     ): EntityDefinition {
         return new EntityDefinition(
             $className,
@@ -46,6 +49,7 @@ final class DefinitionBuilder
             $indexes,
             $comment,
             $oneToOne,
+            $manyToMany,
         );
     }
 

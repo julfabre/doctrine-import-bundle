@@ -7,12 +7,13 @@ namespace Juf\DoctrineImportBundle\Definition;
 final readonly class EntityDefinition
 {
     /**
-     * @param string                    $className short class name, without namespace
-     * @param list<FieldDefinition>     $fields    in column order
-     * @param list<ManyToOneDefinition> $manyToOne
-     * @param list<OneToManyDefinition> $oneToMany
-     * @param list<IndexDefinition>     $indexes
-     * @param list<OneToOneDefinition>  $oneToOne
+     * @param string                     $className  short class name, without namespace
+     * @param list<FieldDefinition>      $fields     in column order
+     * @param list<ManyToOneDefinition>  $manyToOne
+     * @param list<OneToManyDefinition>  $oneToMany
+     * @param list<IndexDefinition>      $indexes
+     * @param list<OneToOneDefinition>   $oneToOne
+     * @param list<ManyToManyDefinition> $manyToMany
      */
     public function __construct(
         public string $className,
@@ -24,6 +25,7 @@ final readonly class EntityDefinition
         public array $indexes,
         public ?string $comment,
         public array $oneToOne = [],
+        public array $manyToMany = [],
     ) {
     }
 
@@ -45,6 +47,26 @@ final readonly class EntityDefinition
             $this->indexes,
             $this->comment,
             $oneToOne,
+            $this->manyToMany,
+        );
+    }
+
+    /**
+     * @param list<ManyToManyDefinition> $manyToMany
+     */
+    public function withManyToMany(array $manyToMany): self
+    {
+        return new self(
+            $this->className,
+            $this->tableName,
+            $this->repositoryClassName,
+            $this->fields,
+            $this->manyToOne,
+            $this->oneToMany,
+            $this->indexes,
+            $this->comment,
+            $this->oneToOne,
+            $manyToMany,
         );
     }
 }
