@@ -46,6 +46,27 @@ final class RoundTripTest extends DatabaseTestCase
         $this->assertNoDifference($this->diff($connection, $entityDirectory));
     }
 
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function mySqlPlatforms(): iterable
+    {
+        yield 'mysql' => ['mysql'];
+        yield 'mariadb' => ['mariadb'];
+    }
+
+    #[Test]
+    #[DataProvider('mySqlPlatforms')]
+    public function it_regenerates_enum_columns_on_mysql(string $platform): void
+    {
+        $connection = $this->connect($platform);
+        $connection->executeStatement("CREATE TABLE film (id INT AUTO_INCREMENT PRIMARY KEY, rating ENUM('G', 'PG', 'PG-13') NOT NULL DEFAULT 'G', status ENUM('draft', 'published') NULL)");
+
+        [, $entityDirectory] = $this->generateEntities($connection, $platform);
+
+        $this->assertNoDifference($this->diff($connection, $entityDirectory));
+    }
+
     private function diff(Connection $connection, string $entityDirectory): SchemaDiff
     {
         $entityManager = DoctrineTestConfiguration::entityManager($connection, $entityDirectory);

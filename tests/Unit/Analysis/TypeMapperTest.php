@@ -59,9 +59,14 @@ final class TypeMapperTest extends TestCase
     }
 
     #[Test]
-    public function it_maps_enum_to_string_and_binary_to_mixed_with_an_info(): void
+    public function it_maps_enum_to_the_dbal_enum_type(): void
     {
-        self::assertSame(['string', 'string', 'column.enum_as_string'], $this->map('enum'));
+        self::assertSame(['enum', 'string', null], $this->map('enum'));
+    }
+
+    #[Test]
+    public function it_maps_binary_to_mixed_with_an_info(): void
+    {
         self::assertSame(['binary', 'mixed', 'column.binary_as_mixed'], $this->map('binary'));
         self::assertSame(['blob', 'mixed', 'column.binary_as_mixed'], $this->map('blob'));
     }

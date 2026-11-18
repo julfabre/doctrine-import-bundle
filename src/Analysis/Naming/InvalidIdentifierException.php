@@ -13,4 +13,9 @@ final class InvalidIdentifierException extends InvalidArgumentException implemen
     {
         return new self(\sprintf('The name "%s" contains characters other than ASCII letters, digits and underscores.', $name));
     }
+
+    public static function forEnumValue(string $value): self
+    {
+        return new self(\sprintf('The value "%s" gives no valid enum case name.', $value));
+    }
 }

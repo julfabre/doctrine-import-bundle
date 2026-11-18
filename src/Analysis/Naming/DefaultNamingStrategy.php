@@ -68,9 +68,26 @@ final readonly class DefaultNamingStrategy implements NamingStrategyInterface
         return lcfirst($this->inflector->pluralize($className));
     }
 
-    /**
-     * @throws InvalidIdentifierException
-     */
+    public function enumClassName(string $entityClassName, string $propertyName): string
+    {
+        return $entityClassName.ucfirst($propertyName);
+    }
+
+    public function enumCaseName(string $value): string
+    {
+        $words = preg_split('/[^A-Za-z0-9]+/', $value, -1, \PREG_SPLIT_NO_EMPTY);
+        $words = false === $words ? [] : $words;
+
+        $name = implode('', array_map(static fn (string $word): string => ucfirst(strtolower($word)), $words));
+
+        // "class" is reserved for Enum::class.
+        if ('' === $name || 'class' === strtolower($name)) {
+            throw InvalidIdentifierException::forEnumValue($value);
+        }
+
+        return 1 === preg_match('/^\d/', $name) ? 'Value'.$name : $name;
+    }
+
     private function validated(string $name): string
     {
         if (1 !== preg_match('/^[A-Za-z0-9_]+$/D', $name)) {

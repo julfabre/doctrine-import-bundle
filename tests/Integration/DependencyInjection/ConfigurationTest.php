@@ -25,6 +25,7 @@ final class ConfigurationTest extends TestCase
             'tables' => ['include' => [], 'exclude' => []],
             'entity' => ['namespace' => 'App\Entity', 'dir' => '%kernel.project_dir%/src/Entity'],
             'repository' => ['namespace' => 'App\Repository', 'dir' => '%kernel.project_dir%/src/Repository'],
+            'enum' => ['namespace' => 'App\Enum', 'dir' => '%kernel.project_dir%/src/Enum'],
         ], $this->process([]));
     }
 
@@ -37,6 +38,7 @@ final class ConfigurationTest extends TestCase
             'tables' => ['include' => ['blog_*'], 'exclude' => ['*_archive']],
             'entity' => ['namespace' => 'Blog\Domain', 'dir' => '%kernel.project_dir%/src/Domain'],
             'repository' => ['namespace' => 'Blog\Persistence', 'dir' => '%kernel.project_dir%/src/Persistence'],
+            'enum' => ['namespace' => 'Blog\Kind', 'dir' => '%kernel.project_dir%/src/Kind'],
         ];
 
         self::assertSame($configuration, $this->process($configuration));

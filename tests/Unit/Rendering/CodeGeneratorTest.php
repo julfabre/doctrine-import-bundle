@@ -6,11 +6,14 @@ namespace Juf\DoctrineImportBundle\Tests\Unit\Rendering;
 
 use Juf\DoctrineImportBundle\Definition\ColumnOptions;
 use Juf\DoctrineImportBundle\Definition\EntityDefinition;
+use Juf\DoctrineImportBundle\Definition\EnumCaseDefinition;
+use Juf\DoctrineImportBundle\Definition\EnumDefinition;
 use Juf\DoctrineImportBundle\Definition\FieldDefinition;
 use Juf\DoctrineImportBundle\Definition\GenerationModel;
 use Juf\DoctrineImportBundle\Rendering\AttributeMappingStrategy;
 use Juf\DoctrineImportBundle\Rendering\CodeGenerator;
 use Juf\DoctrineImportBundle\Rendering\EntityClassBuilder;
+use Juf\DoctrineImportBundle\Rendering\EnumBuilder;
 use Juf\DoctrineImportBundle\Rendering\GeneratedFile;
 use Juf\DoctrineImportBundle\Rendering\MappingStrategyInterface;
 use Juf\DoctrineImportBundle\Rendering\PhpLiteral;
@@ -32,6 +35,9 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(EntityDefinition::class)]
 #[UsesClass(FieldDefinition::class)]
 #[UsesClass(ColumnOptions::class)]
+#[UsesClass(EnumDefinition::class)]
+#[UsesClass(EnumCaseDefinition::class)]
+#[UsesClass(EnumBuilder::class)]
 final class CodeGeneratorTest extends TestCase
 {
     #[Test]
@@ -72,6 +78,23 @@ final class CodeGeneratorTest extends TestCase
 
         self::assertSame(
             ['Author', 'Author.orm.xml', 'App\\Repository\\AuthorRepository', 'Post', 'Post.orm.xml', 'App\\Repository\\PostRepository'],
+            array_map(static fn (GeneratedFile $file): string => $file->className, $files),
+        );
+    }
+
+    #[Test]
+    public function it_generates_one_file_per_enum_in_the_enum_namespace(): void
+    {
+        $enum = new EnumDefinition('FilmRating', [new EnumCaseDefinition('G', 'G')]);
+        $model = new GenerationModel([DefinitionBuilder::entity('Film', [
+            DefinitionBuilder::identityId(),
+            DefinitionBuilder::field('rating', 'rating', 'enum', enum: $enum),
+        ])], []);
+
+        $files = (new CodeGenerator())->generate($model, new RenderingOptions(enumNamespace: 'Cinema\Kind'));
+
+        self::assertSame(
+            ['App\Entity\Film', 'App\Repository\FilmRepository', 'Cinema\Kind\FilmRating'],
             array_map(static fn (GeneratedFile $file): string => $file->className, $files),
         );
     }

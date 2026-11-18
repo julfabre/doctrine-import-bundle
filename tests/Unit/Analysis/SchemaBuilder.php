@@ -48,6 +48,9 @@ final class SchemaBuilder
         return self::column('id', 'integer', autoincrement: true);
     }
 
+    /**
+     * @param list<string> $values
+     */
     public static function column(
         string $name,
         string $type = 'integer',
@@ -60,11 +63,12 @@ final class SchemaBuilder
         int $scale = 0,
         bool $unsigned = false,
         bool $fixed = false,
+        array $values = [],
         bool $generated = false,
     ): ColumnMetadata {
         return new ColumnMetadata(
             $name,
-            new ColumnType($type, $length, $precision, $scale, $unsigned, $fixed),
+            new ColumnType($type, $length, $precision, $scale, $unsigned, $fixed, $values),
             $nullable,
             $autoincrement,
             $default,

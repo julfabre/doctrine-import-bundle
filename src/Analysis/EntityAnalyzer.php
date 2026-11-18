@@ -36,17 +36,23 @@ final readonly class EntityAnalyzer
         $diagnostics = new DiagnosticCollector();
         $entities = [];
 
+        $enumClassNames = [];
+
         foreach ($schema->tables as $table) {
             $className = $this->classNames->resolve($table, array_keys($entities), $diagnostics);
             if (null !== $className) {
-                $entities[$className] = $this->entity($table, $className, $diagnostics);
+                $entities[$className] = $this->entity($table, $className, $enumClassNames, $diagnostics);
+                $enumClassNames = [...$enumClassNames, ...$this->enumClassNames($entities[$className])];
             }
         }
 
         return new GenerationModel(array_values($entities), $diagnostics->all());
     }
 
-    private function entity(TableMetadata $table, string $className, DiagnosticCollector $diagnostics): EntityDefinition
+    /**
+     * @param list<string> $enumClassNames enums already generated for other entities
+     */
+    private function entity(TableMetadata $table, string $className, array $enumClassNames, DiagnosticCollector $diagnostics): EntityDefinition
     {
         if (\count($table->primaryKey) > 1) {
             $diagnostics->report(Severity::Info, 'table.composite_primary_key', \sprintf('Table "%s" has a composite primary key, which Doctrine supports but advises against.', $table->name), $table->name);
@@ -54,7 +60,7 @@ final readonly class EntityAnalyzer
 
         $fields = [];
         foreach ($table->columns as $column) {
-            $field = $this->fieldAnalyzer->analyze($table, $column, $diagnostics);
+            $field = $this->fieldAnalyzer->analyze($table, $column, $className, $enumClassNames, $diagnostics);
             if ($field instanceof FieldDefinition) {
                 $fields[] = $field;
             }
@@ -70,5 +76,21 @@ final readonly class EntityAnalyzer
             array_map(static fn (IndexMetadata $index): IndexDefinition => new IndexDefinition($index->name, $index->columns, $index->unique, $index->flags), $table->indexes),
             $table->comment,
         );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function enumClassNames(EntityDefinition $entity): array
+    {
+        $names = [];
+        foreach ($entity->fields as $field) {
+            $enumClassName = $field->enum?->className;
+            if (null !== $enumClassName) {
+                $names[] = $enumClassName;
+            }
+        }
+
+        return $names;
     }
 }

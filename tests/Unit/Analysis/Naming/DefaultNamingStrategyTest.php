@@ -8,6 +8,7 @@ use Juf\DoctrineImportBundle\Analysis\Naming\ClassName;
 use Juf\DoctrineImportBundle\Analysis\Naming\DefaultNamingStrategy;
 use Juf\DoctrineImportBundle\Analysis\Naming\InvalidIdentifierException;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -117,5 +118,50 @@ final class DefaultNamingStrategyTest extends TestCase
 
         self::assertSame('Users', $naming->unsingularizedClassNameForTable('wp_users')->value);
         self::assertSame('ListEntity', $naming->unsingularizedClassNameForTable('list')->value);
+    }
+
+    #[Test]
+    public function it_names_an_enum_after_its_entity_and_property(): void
+    {
+        self::assertSame('FilmRating', (new DefaultNamingStrategy())->enumClassName('Film', 'rating'));
+    }
+
+    #[Test]
+    public function it_names_enum_cases_in_pascal_case_from_their_values(): void
+    {
+        $naming = new DefaultNamingStrategy();
+
+        self::assertSame('Pg13', $naming->enumCaseName('PG-13'));
+        self::assertSame('InProgress', $naming->enumCaseName('in_progress'));
+        self::assertSame('OnHold', $naming->enumCaseName('on hold'));
+        self::assertSame('G', $naming->enumCaseName('G'));
+    }
+
+    #[Test]
+    public function it_prefixes_an_enum_case_starting_with_a_digit(): void
+    {
+        $naming = new DefaultNamingStrategy();
+
+        self::assertSame('Value1', $naming->enumCaseName('1'));
+        self::assertSame('Value2fa', $naming->enumCaseName('2FA'));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function invalidEnumValues(): iterable
+    {
+        yield 'empty' => [''];
+        yield 'separators only' => ['---'];
+        yield 'reserved for ::class' => ['class'];
+    }
+
+    #[Test]
+    #[DataProvider('invalidEnumValues')]
+    public function it_rejects_an_enum_value_that_gives_no_valid_case_name(string $value): void
+    {
+        $this->expectException(InvalidIdentifierException::class);
+
+        (new DefaultNamingStrategy())->enumCaseName($value);
     }
 }

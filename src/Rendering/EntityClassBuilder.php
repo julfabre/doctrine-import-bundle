@@ -7,11 +7,13 @@ namespace Juf\DoctrineImportBundle\Rendering;
 use Doctrine\Inflector\Inflector;
 use Doctrine\Inflector\InflectorFactory;
 use Juf\DoctrineImportBundle\Definition\EntityDefinition;
+use Juf\DoctrineImportBundle\Definition\EnumDefinition;
 use Juf\DoctrineImportBundle\Definition\FieldDefinition;
 use Juf\DoctrineImportBundle\Definition\IdGeneration;
 use Juf\DoctrineImportBundle\Definition\ManyToOneDefinition;
 use Juf\DoctrineImportBundle\Definition\OneToManyDefinition;
 use Nette\PhpGenerator\ClassType;
+use Nette\PhpGenerator\Literal;
 use Nette\PhpGenerator\PhpNamespace;
 
 /**
@@ -30,7 +32,7 @@ final readonly class EntityClassBuilder
         $this->inflector = InflectorFactory::create()->build();
     }
 
-    public function build(EntityDefinition $entity, PhpNamespace $namespace): ClassType
+    public function build(EntityDefinition $entity, PhpNamespace $namespace, RenderingOptions $options): ClassType
     {
         $class = $namespace->addClass($entity->className);
 
@@ -43,7 +45,7 @@ final readonly class EntityClassBuilder
         }
 
         foreach ($entity->fields as $field) {
-            $this->addField($class, $field);
+            $this->addField($class, $field, $this->propertyType($field, $namespace, $options));
         }
 
         foreach ($entity->manyToOne as $association) {
@@ -57,27 +59,57 @@ final readonly class EntityClassBuilder
         return $class;
     }
 
-    private function addField(ClassType $class, FieldDefinition $field): void
+    /**
+     * @param string $type PHP type of the property, fully qualified for an enum
+     */
+    private function addField(ClassType $class, FieldDefinition $field, string $type): void
     {
         $nullable = $field->nullable || $this->isGenerated($field);
-        $property = $class->addProperty($field->propertyName)->setPrivate()->setType($field->phpType);
-        if ('mixed' !== $field->phpType) {
+        $property = $class->addProperty($field->propertyName)->setPrivate()->setType($type);
+        if ('mixed' !== $type) {
             $property->setNullable($nullable);
         }
 
-        $literal = PhpLiteral::fromDefault($field->options->default, $field->phpType);
-        if ($literal instanceof PhpLiteral) {
-            $property->setValue($literal->value);
+        $initialValue = $this->initialValue($field);
+        if (null !== $initialValue) {
+            $property->setValue($initialValue);
         } elseif ($nullable) {
             $property->setValue(null);
         }
 
-        $getter = 'bool' === $field->phpType ? $this->booleanGetterName($field->propertyName) : 'get'.ucfirst($field->propertyName);
-        $this->addGetter($class, $getter, $field->propertyName, $field->phpType, $nullable);
+        $getter = 'bool' === $type ? $this->booleanGetterName($field->propertyName) : 'get'.ucfirst($field->propertyName);
+        $this->addGetter($class, $getter, $field->propertyName, $type, $nullable);
 
         if (!$this->isGenerated($field)) {
-            $this->addSetter($class, $field->propertyName, $field->phpType, $nullable);
+            $this->addSetter($class, $field->propertyName, $type, $nullable);
         }
+    }
+
+    private function propertyType(FieldDefinition $field, PhpNamespace $namespace, RenderingOptions $options): string
+    {
+        if (!$field->enum instanceof EnumDefinition) {
+            return $field->phpType;
+        }
+
+        $enumClass = $options->enumNamespace.'\\'.$field->enum->className;
+        $namespace->addUse($enumClass);
+
+        return $enumClass;
+    }
+
+    private function initialValue(FieldDefinition $field): int|float|bool|string|Literal|null
+    {
+        if (!$field->enum instanceof EnumDefinition) {
+            return PhpLiteral::fromDefault($field->options->default, $field->phpType)?->value;
+        }
+
+        foreach ($field->enum->cases as $case) {
+            if ($case->value === $field->options->default) {
+                return new Literal($field->enum->className.'::'.$case->name);
+            }
+        }
+
+        return null;
     }
 
     /**

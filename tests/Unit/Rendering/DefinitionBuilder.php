@@ -6,6 +6,7 @@ namespace Juf\DoctrineImportBundle\Tests\Unit\Rendering;
 
 use Juf\DoctrineImportBundle\Definition\ColumnOptions;
 use Juf\DoctrineImportBundle\Definition\EntityDefinition;
+use Juf\DoctrineImportBundle\Definition\EnumDefinition;
 use Juf\DoctrineImportBundle\Definition\FieldDefinition;
 use Juf\DoctrineImportBundle\Definition\IdGeneration;
 use Juf\DoctrineImportBundle\Definition\IndexDefinition;
@@ -65,6 +66,7 @@ final class DefinitionBuilder
         ?string $comment = null,
         bool $generated = false,
         ?string $sequenceName = null,
+        ?EnumDefinition $enum = null,
     ): FieldDefinition {
         return new FieldDefinition(
             $propertyName,
@@ -76,6 +78,7 @@ final class DefinitionBuilder
             new ColumnOptions($length, $precision, $scale, $unsigned, $fixed, $default, $comment),
             $generated,
             $sequenceName,
+            $enum,
         );
     }
 }

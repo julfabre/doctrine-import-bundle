@@ -19,6 +19,7 @@ final readonly class GenerationRequest
         public RenderingOptions $rendering,
         public string $entityDirectory,
         public string $repositoryDirectory,
+        public string $enumDirectory,
         public WriteOptions $write,
     ) {
     }
