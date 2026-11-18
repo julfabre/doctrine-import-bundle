@@ -91,6 +91,11 @@ juf_doctrine_import:
   collection (`children` for a table referencing itself).
 - A foreign key covered by a single-column unique index becomes an owning `OneToOne` association, without
   inverse side: Doctrine always loads the inverse side of a `OneToOne`, so it is left for you to add when needed.
+- A pure join table (two columns forming the primary key, each one a foreign key to another table, nothing else)
+  becomes a `ManyToMany` association instead of an entity: `post_tag(post_id, tag_id)` gives `Post::$tags`, the
+  owning side with its `JoinTable`, and `Tag::$posts`, mapped by it. The table of the first primary key column
+  owns the association. `Tag::addPost()` / `removePost()` also update the owning side. A table joining a table
+  to itself only gets the owning side (`User::$friends`), to be named by hand on the other side.
 - A MySQL or MariaDB `ENUM` column becomes a string-backed PHP enum named after the entity and the property
   (`film.rating` → `FilmRating`, cases `G`, `Pg13`…), mapped with `type: Types::ENUM, enumType: FilmRating::class`.
   One enum per column, even when two columns share the same values.
@@ -125,6 +130,10 @@ guessed code.
 | `table.outside_search_path` | warning | PostgreSQL table outside the default schema, not read |
 | `table.composite_primary_key` | info | Supported, but Doctrine advises against it |
 | `relation.one_to_one_without_inverse_side` | info | Unique foreign key mapped as an owning `OneToOne`, without inverse side |
+| `relation.many_to_many` | info | Join table mapped as a `ManyToMany` association |
+| `relation.many_to_many_without_inverse_side` | info | Join table of a table with itself: only the owning side is generated |
+| `relation.join_table_index_renamed` | warning | Index of a join table: a `ManyToMany` mapping cannot name it, `doctrine:schema:update` would rename it |
+| `relation.join_table_not_mapped` | warning | Join table to a table that is not generated: it is skipped |
 | `column.generated` | info | Generated column mapped read-only; its expression is not part of the mapping |
 | `column.enum_as_string` | warning | `ENUM` column kept as a string: a value gives no valid case name, two values give the same case, or the enum name is already taken |
 | `column.binary_as_mixed` | info | Type mapped approximately |
@@ -133,9 +142,11 @@ guessed code.
 ## Known limitations
 
 - **Associations**: only single-column foreign keys to a primary key become associations, as `ManyToOne` /
-  `OneToMany`, or as an owning `OneToOne` when the foreign key is unique. Many-to-many join tables, composite
-  foreign keys and derived identities (a foreign key that is also the primary key) are kept as scalar fields
-  and reported.
+  `OneToMany`, as an owning `OneToOne` when the foreign key is unique, and pure join tables as `ManyToMany`.
+  Join tables with extra columns, composite foreign keys and derived identities (a foreign key that is also
+  the primary key) are kept as scalar fields and reported.
+- **Join table indexes**: a `ManyToMany` mapping cannot name the indexes of its join table. An index other than
+  the primary key (MySQL creates one for each foreign key) would be renamed by `doctrine:schema:update`.
 - **Inheritance** is never inferred: each table becomes an independent entity.
 - **Generated columns on SQLite** are not read by Doctrine DBAL: they are reported
   (`column.generated_not_read`) and missing from the entity.
