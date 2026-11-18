@@ -104,6 +104,18 @@ final class MySqlSchemaReaderTest extends DatabaseTestCase
 
     #[Test]
     #[DataProvider('mySqlPlatforms')]
+    public function it_reads_the_values_of_an_enum_column(string $platform): void
+    {
+        $connection = $this->connect($platform);
+        $connection->executeStatement("CREATE TABLE film (id INT NOT NULL PRIMARY KEY, rating ENUM('G', 'PG-13') DEFAULT 'G')");
+
+        $rating = (new DbalSchemaReader($connection))->read(new TableFilter())->tables[0]->columns[1] ?? self::fail('Column "film.rating" was not read.');
+
+        self::assertSame(['enum', ['G', 'PG-13'], 'G'], [$rating->type->name, $rating->type->values, $rating->default]);
+    }
+
+    #[Test]
+    #[DataProvider('mySqlPlatforms')]
     public function it_reads_the_flags_of_fulltext_indexes(string $platform): void
     {
         $connection = $this->connect($platform);

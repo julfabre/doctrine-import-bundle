@@ -10,7 +10,8 @@ namespace Juf\DoctrineImportBundle\Schema;
 final readonly class ColumnType
 {
     /**
-     * @param string $name DBAL type name, e.g. "integer" or "datetime_immutable"
+     * @param string       $name   DBAL type name, e.g. "integer" or "datetime_immutable"
+     * @param list<string> $values allowed values of an ENUM column
      */
     public function __construct(
         public string $name,
@@ -19,6 +20,7 @@ final readonly class ColumnType
         public int $scale,
         public bool $unsigned,
         public bool $fixed,
+        public array $values = [],
     ) {
     }
 }

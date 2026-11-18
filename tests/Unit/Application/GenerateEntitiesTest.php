@@ -6,6 +6,7 @@ namespace Juf\DoctrineImportBundle\Tests\Unit\Application;
 
 use Juf\DoctrineImportBundle\Analysis\ClassNameResolver;
 use Juf\DoctrineImportBundle\Analysis\EntityAnalyzer;
+use Juf\DoctrineImportBundle\Analysis\EnumAnalyzer;
 use Juf\DoctrineImportBundle\Analysis\FieldAnalyzer;
 use Juf\DoctrineImportBundle\Analysis\MappedType;
 use Juf\DoctrineImportBundle\Analysis\Naming\ClassName;
@@ -22,6 +23,8 @@ use Juf\DoctrineImportBundle\Command\GenerationReportPrinter;
 use Juf\DoctrineImportBundle\Command\GenerationRequestFactory;
 use Juf\DoctrineImportBundle\Definition\ColumnOptions;
 use Juf\DoctrineImportBundle\Definition\EntityDefinition;
+use Juf\DoctrineImportBundle\Definition\EnumCaseDefinition;
+use Juf\DoctrineImportBundle\Definition\EnumDefinition;
 use Juf\DoctrineImportBundle\Definition\FieldDefinition;
 use Juf\DoctrineImportBundle\Definition\GenerationModel;
 use Juf\DoctrineImportBundle\Definition\IndexDefinition;
@@ -33,6 +36,7 @@ use Juf\DoctrineImportBundle\Diagnostic\Severity;
 use Juf\DoctrineImportBundle\Rendering\AttributeMappingStrategy;
 use Juf\DoctrineImportBundle\Rendering\CodeGenerator;
 use Juf\DoctrineImportBundle\Rendering\EntityClassBuilder;
+use Juf\DoctrineImportBundle\Rendering\EnumBuilder;
 use Juf\DoctrineImportBundle\Rendering\GeneratedFile;
 use Juf\DoctrineImportBundle\Rendering\PhpLiteral;
 use Juf\DoctrineImportBundle\Rendering\RenderingOptions;
@@ -104,6 +108,10 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(OutputLocation::class)]
 #[UsesClass(WriteOptions::class)]
 #[UsesClass(WrittenFile::class)]
+#[UsesClass(EnumAnalyzer::class)]
+#[UsesClass(EnumDefinition::class)]
+#[UsesClass(EnumCaseDefinition::class)]
+#[UsesClass(EnumBuilder::class)]
 final class GenerateEntitiesTest extends TestCase
 {
     private string $directory;
@@ -149,6 +157,27 @@ final class GenerateEntitiesTest extends TestCase
         self::assertTrue($report->hasErrors());
     }
 
+    #[Test]
+    public function it_writes_enums_in_the_enum_directory(): void
+    {
+        $reader = new InMemorySchemaReader(SchemaBuilder::schema([
+            SchemaBuilder::table('ticket', [SchemaBuilder::id(), SchemaBuilder::column('status', 'enum', values: ['open', 'closed'])]),
+        ]));
+
+        $report = (new GenerateEntities())->generate($reader, new GenerationRequest(
+            new TableFilter(),
+            [],
+            new RenderingOptions(enumNamespace: 'App\Kind'),
+            $this->directory.'/Entity',
+            $this->directory.'/Repository',
+            $this->directory.'/Kind',
+            new WriteOptions(dryRun: false, force: false),
+        ));
+
+        self::assertFileExists($this->directory.'/Kind/TicketStatus.php');
+        self::assertContains('App\Kind\TicketStatus', array_map(static fn (WrittenFile $file): string => $file->className, $report->files));
+    }
+
     /**
      * @param list<string> $tablePrefixes
      */
@@ -168,6 +197,7 @@ final class GenerateEntitiesTest extends TestCase
             new RenderingOptions(),
             $this->directory.'/Entity',
             $this->directory.'/Repository',
+            $this->directory.'/Enum',
             new WriteOptions(dryRun: false, force: false),
         ));
     }

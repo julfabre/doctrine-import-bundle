@@ -26,4 +26,11 @@ interface NamingStrategyInterface
     public function associationNameForColumn(string $column): string;
 
     public function collectionNameForEntity(string $className): string;
+
+    public function enumClassName(string $entityClassName, string $propertyName): string;
+
+    /**
+     * @throws InvalidIdentifierException when the value cannot give a valid case name
+     */
+    public function enumCaseName(string $value): string;
 }

@@ -44,7 +44,7 @@ final readonly class AttributeMappingStrategy implements MappingStrategyInterfac
             $namespace->addUse('Doctrine\DBAL\Types\Types');
         }
 
-        $class = $this->classBuilder->build($entity, $namespace);
+        $class = $this->classBuilder->build($entity, $namespace, $options);
         self::mapClass($class, $entity);
         foreach ($entity->fields as $field) {
             self::mapField($class, $field);
@@ -103,6 +103,7 @@ final readonly class AttributeMappingStrategy implements MappingStrategyInterfac
     private static function columnArguments(FieldDefinition $field, ?Literal $defaultExpression): array
     {
         $options = $field->options;
+        $enumClass = $field->enum?->className;
         $columnOptions = self::withoutNulls([
             'unsigned' => self::flag($options->unsigned),
             'fixed' => self::flag($options->fixed),
@@ -120,6 +121,7 @@ final readonly class AttributeMappingStrategy implements MappingStrategyInterfac
             // Doctrine must never write a generated column, and must read it back after each write.
             'insertable' => $field->generated ? false : null,
             'updatable' => $field->generated ? false : null,
+            'enumType' => null === $enumClass ? null : new Literal($enumClass.'::class'),
             'options' => [] === $columnOptions ? null : $columnOptions,
             'generated' => $field->generated ? 'ALWAYS' : null,
         ]);

@@ -28,9 +28,10 @@ trait GeneratesEntities
         $report = (new GenerateEntities())->generate(new DbalSchemaReader($connection), new GenerationRequest(
             new TableFilter(),
             [],
-            new RenderingOptions($namespace.'\Entity', $namespace.'\Repository'),
+            new RenderingOptions($namespace.'\Entity', $namespace.'\Repository', $namespace.'\Enum'),
             $directory.'/Entity',
             $directory.'/Repository',
+            $directory.'/Enum',
             new WriteOptions(dryRun: false, force: false),
         ));
         foreach ($report->files as $file) {

@@ -48,6 +48,8 @@ final class GenerateEntitiesFromDatabaseCommand extends Command
             ->addOption('dir', null, InputOption::VALUE_REQUIRED, 'Directory of the entities')
             ->addOption('repository-namespace', null, InputOption::VALUE_REQUIRED, 'Namespace of the repositories')
             ->addOption('repository-dir', null, InputOption::VALUE_REQUIRED, 'Directory of the repositories')
+            ->addOption('enum-namespace', null, InputOption::VALUE_REQUIRED, 'Namespace of the enums generated for ENUM columns')
+            ->addOption('enum-dir', null, InputOption::VALUE_REQUIRED, 'Directory of the enums')
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'List the files without writing them')
             ->addOption('force', null, InputOption::VALUE_NONE, 'Overwrite existing files: manual changes are lost')
             ->setHelp(<<<'HELP'

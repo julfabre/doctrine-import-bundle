@@ -34,4 +34,5 @@ return static function (DefinitionConfigurator $definition) use ($listNode, $loc
 
     $location($children, 'entity', 'App\\Entity', '%kernel.project_dir%/src/Entity');
     $location($children, 'repository', 'App\\Repository', '%kernel.project_dir%/src/Repository');
+    $location($children, 'enum', 'App\\Enum', '%kernel.project_dir%/src/Enum');
 };

@@ -19,6 +19,7 @@ use Symfony\Component\Console\Input\InputInterface;
  *     tables: array{include: list<string>, exclude: list<string>},
  *     entity: array{namespace: string, dir: string},
  *     repository: array{namespace: string, dir: string},
+ *     enum: array{namespace: string, dir: string},
  * }
  */
 final readonly class GenerationRequestFactory
@@ -42,9 +43,11 @@ final readonly class GenerationRequestFactory
             new RenderingOptions(
                 $this->stringOption($input, 'namespace') ?? $this->defaults['entity']['namespace'],
                 $this->stringOption($input, 'repository-namespace') ?? $this->defaults['repository']['namespace'],
+                $this->stringOption($input, 'enum-namespace') ?? $this->defaults['enum']['namespace'],
             ),
             $this->stringOption($input, 'dir') ?? $this->defaults['entity']['dir'],
             $this->stringOption($input, 'repository-dir') ?? $this->defaults['repository']['dir'],
+            $this->stringOption($input, 'enum-dir') ?? $this->defaults['enum']['dir'],
             new WriteOptions(true === $input->getOption('dry-run'), true === $input->getOption('force')),
         );
     }

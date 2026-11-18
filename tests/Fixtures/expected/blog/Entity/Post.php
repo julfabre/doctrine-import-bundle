@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\PostVisibility;
 use App\Repository\PostRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -35,6 +36,9 @@ class Post
 
     #[ORM\Column(name: 'metadata', type: Types::JSON, nullable: true)]
     private ?array $metadata = null;
+
+    #[ORM\Column(name: 'visibility', type: Types::ENUM, enumType: PostVisibility::class, options: ['default' => 'public'])]
+    private PostVisibility $visibility = PostVisibility::Public;
 
     #[ORM\Column(name: 'title_length', type: Types::INTEGER, nullable: true, insertable: false, updatable: false, generated: 'ALWAYS')]
     private ?int $titleLength = null;
@@ -120,6 +124,18 @@ class Post
     public function setMetadata(?array $metadata): static
     {
         $this->metadata = $metadata;
+
+        return $this;
+    }
+
+    public function getVisibility(): PostVisibility
+    {
+        return $this->visibility;
+    }
+
+    public function setVisibility(PostVisibility $visibility): static
+    {
+        $this->visibility = $visibility;
 
         return $this;
     }

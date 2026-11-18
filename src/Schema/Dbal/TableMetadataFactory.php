@@ -58,6 +58,7 @@ final class TableMetadataFactory
                 scale: $column->getScale(),
                 unsigned: $column->getUnsigned(),
                 fixed: $column->getFixed(),
+                values: $column->getValues(),
             ),
             nullable: !$column->getNotnull(),
             autoincrement: $column->getAutoincrement(),

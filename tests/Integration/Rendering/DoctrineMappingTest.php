@@ -24,6 +24,7 @@ final class DoctrineMappingTest extends TestCase
         $this->directory = sys_get_temp_dir().'/juf_doctrine_import/'.bin2hex(random_bytes(6));
         mkdir($this->directory.'/Entity', 0o777, true);
         mkdir($this->directory.'/Repository', 0o777, true);
+        mkdir($this->directory.'/Enum', 0o777, true);
     }
 
     #[Test]
@@ -56,7 +57,7 @@ final class DoctrineMappingTest extends TestCase
     {
         // A namespace per run: generated classes cannot be declared twice in the same process.
         $namespace = 'JufGenerated\\'.$suffix.bin2hex(random_bytes(4));
-        $files = (new CodeGenerator())->generate(BlogSchema::model(), new RenderingOptions($namespace.'\\Entity', $namespace.'\\Repository'));
+        $files = (new CodeGenerator())->generate(BlogSchema::model(), new RenderingOptions($namespace.'\\Entity', $namespace.'\\Repository', $namespace.'\\Enum'));
 
         return array_map(function (GeneratedFile $file) use ($namespace): string {
             $path = $this->directory.'/'.str_replace([$namespace.'\\', '\\'], ['', '/'], $file->className).'.php';

@@ -6,6 +6,7 @@ namespace Juf\DoctrineImportBundle\Tests\Unit\Analysis;
 
 use Juf\DoctrineImportBundle\Analysis\ClassNameResolver;
 use Juf\DoctrineImportBundle\Analysis\EntityAnalyzer;
+use Juf\DoctrineImportBundle\Analysis\EnumAnalyzer;
 use Juf\DoctrineImportBundle\Analysis\FieldAnalyzer;
 use Juf\DoctrineImportBundle\Analysis\MappedType;
 use Juf\DoctrineImportBundle\Analysis\Naming\ClassName;
@@ -57,6 +58,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(ForeignKeyMetadata::class)]
 #[UsesClass(IndexMetadata::class)]
 #[UsesClass(IndexDefinition::class)]
+#[UsesClass(EnumAnalyzer::class)]
 final class RelationAnalyzerTest extends TestCase
 {
     use DefinitionAssertions;

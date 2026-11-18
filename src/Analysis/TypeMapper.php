@@ -34,7 +34,8 @@ final class TypeMapper
         'dateinterval' => ['dateinterval', '\DateInterval'],
         'json' => ['json', 'array'],
         'simple_array' => ['simple_array', 'array'],
-        'enum' => ['string', 'string', 'column.enum_as_string'],
+        // A PHP enum is generated from the values; "string" is the fallback when it cannot be.
+        'enum' => ['enum', 'string'],
         'binary' => ['binary', 'mixed', 'column.binary_as_mixed'],
         'blob' => ['blob', 'mixed', 'column.binary_as_mixed'],
     ];

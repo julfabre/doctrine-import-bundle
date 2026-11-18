@@ -38,6 +38,7 @@ final readonly class GenerateEntities
             [
                 new OutputLocation($request->rendering->entityNamespace, $request->entityDirectory),
                 new OutputLocation($request->rendering->repositoryNamespace, $request->repositoryDirectory),
+                new OutputLocation($request->rendering->enumNamespace, $request->enumDirectory),
             ],
             $request->write,
         );

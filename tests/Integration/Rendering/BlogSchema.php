@@ -45,6 +45,7 @@ final class BlogSchema
                 SchemaBuilder::column('views', 'integer', default: '0', unsigned: true),
                 SchemaBuilder::column('published_at', 'datetime', nullable: true),
                 SchemaBuilder::column('metadata', 'json', nullable: true),
+                SchemaBuilder::column('visibility', 'enum', default: 'public', values: ['public', 'private', 'unlisted']),
                 SchemaBuilder::column('title_length', nullable: true, generated: true),
             ], foreignKeys: [
                 SchemaBuilder::foreignKey(['author_id'], 'author', onDelete: 'CASCADE'),

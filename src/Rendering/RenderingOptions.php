@@ -9,6 +9,7 @@ final readonly class RenderingOptions
     public function __construct(
         public string $entityNamespace = 'App\Entity',
         public string $repositoryNamespace = 'App\Repository',
+        public string $enumNamespace = 'App\Enum',
     ) {
     }
 }

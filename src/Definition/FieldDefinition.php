@@ -7,10 +7,11 @@ namespace Juf\DoctrineImportBundle\Definition;
 final readonly class FieldDefinition
 {
     /**
-     * @param string            $doctrineType e.g. "integer" or "datetime_immutable"
-     * @param string            $phpType      e.g. "int" or "\DateTimeImmutable"
-     * @param IdGeneration|null $idGeneration null when the field is not part of the identifier
-     * @param string|null       $sequenceName set when the identifier is taken from a sequence
+     * @param string              $doctrineType e.g. "integer" or "datetime_immutable"
+     * @param string              $phpType      e.g. "int" or "\DateTimeImmutable"
+     * @param IdGeneration|null   $idGeneration null when the field is not part of the identifier
+     * @param string|null         $sequenceName set when the identifier is taken from a sequence
+     * @param EnumDefinition|null $enum         set when the column is mapped to a PHP enum
      */
     public function __construct(
         public string $propertyName,
@@ -22,6 +23,7 @@ final readonly class FieldDefinition
         public ColumnOptions $options,
         public bool $generated,
         public ?string $sequenceName = null,
+        public ?EnumDefinition $enum = null,
     ) {
     }
 

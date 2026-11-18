@@ -6,6 +6,7 @@ namespace Juf\DoctrineImportBundle\Analysis;
 
 use Juf\DoctrineImportBundle\Analysis\Naming\NamingStrategyInterface;
 use Juf\DoctrineImportBundle\Definition\ColumnOptions;
+use Juf\DoctrineImportBundle\Definition\EnumDefinition;
 use Juf\DoctrineImportBundle\Definition\FieldDefinition;
 use Juf\DoctrineImportBundle\Definition\IdGeneration;
 use Juf\DoctrineImportBundle\Diagnostic\DiagnosticCollector;
@@ -27,13 +28,19 @@ final readonly class FieldAnalyzer
     /** PostgreSQL SERIAL: the default takes the next value of a sequence. Qualified or quoted names are left aside. */
     private const SERIAL_DEFAULT = "/^nextval\\('([A-Za-z_][A-Za-z0-9_]*)'::regclass\\)$/";
 
+    private EnumAnalyzer $enums;
+
     public function __construct(
         private NamingStrategyInterface $naming,
         private TypeMapper $types,
     ) {
+        $this->enums = new EnumAnalyzer($naming);
     }
 
-    public function analyze(TableMetadata $table, ColumnMetadata $column, DiagnosticCollector $diagnostics): ?FieldDefinition
+    /**
+     * @param list<string> $takenEnumClassNames enums already generated for other entities
+     */
+    public function analyze(TableMetadata $table, ColumnMetadata $column, string $entityClassName, array $takenEnumClassNames, DiagnosticCollector $diagnostics): ?FieldDefinition
     {
         $mapped = $this->types->map($column->type->name);
         if (!$mapped instanceof MappedType) {
@@ -51,11 +58,15 @@ final readonly class FieldAnalyzer
         }
 
         $sequenceName = $this->serialSequence($table, $column);
+        $propertyName = $this->naming->propertyNameForColumn($column->name);
+        $enum = 'enum' === $mapped->doctrineType
+            ? $this->enums->analyze($table, $column, $this->naming->enumClassName($entityClassName, $propertyName), $takenEnumClassNames, $diagnostics)
+            : null;
 
         return new FieldDefinition(
-            $this->naming->propertyNameForColumn($column->name),
+            $propertyName,
             $column->name,
-            $mapped->doctrineType,
+            'enum' === $mapped->doctrineType && !$enum instanceof EnumDefinition ? 'string' : $mapped->doctrineType,
             $mapped->phpType,
             $column->nullable,
             $this->idGeneration($table, $column, $sequenceName),
@@ -71,6 +82,7 @@ final readonly class FieldAnalyzer
             ),
             $column->generated,
             $sequenceName,
+            $enum,
         );
     }
 

@@ -9,6 +9,7 @@ use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\Persistence\ObjectManager;
 use Juf\DoctrineImportBundle\Analysis\ClassNameResolver;
 use Juf\DoctrineImportBundle\Analysis\EntityAnalyzer;
+use Juf\DoctrineImportBundle\Analysis\EnumAnalyzer;
 use Juf\DoctrineImportBundle\Analysis\FieldAnalyzer;
 use Juf\DoctrineImportBundle\Analysis\MappedType;
 use Juf\DoctrineImportBundle\Analysis\Naming\ClassName;
@@ -118,6 +119,7 @@ use Symfony\Component\HttpKernel\KernelInterface;
 #[UsesClass(WriteOptions::class)]
 #[UsesClass(WrittenFile::class)]
 #[UsesClass(GeneratedColumnsReader::class)]
+#[UsesClass(EnumAnalyzer::class)]
 final class GenerateEntitiesFromDatabaseCommandTest extends KernelTestCase
 {
     private const COMMAND_NAME = 'generate:entities:from-database';
@@ -267,6 +269,7 @@ final class GenerateEntitiesFromDatabaseCommandTest extends KernelTestCase
             'tables' => ['include' => [], 'exclude' => []],
             'entity' => ['namespace' => 'App\\Entity', 'dir' => $this->outputDirectory.'/Entity'],
             'repository' => ['namespace' => 'App\\Repository', 'dir' => $this->outputDirectory.'/Repository'],
+            'enum' => ['namespace' => 'App\Enum', 'dir' => $this->outputDirectory.'/Enum'],
         ], $this->outputDirectory);
 
         $this->expectException(InvalidEntityManagerException::class);

@@ -6,6 +6,8 @@ namespace Juf\DoctrineImportBundle\Tests\Unit\Rendering;
 
 use Juf\DoctrineImportBundle\Definition\ColumnOptions;
 use Juf\DoctrineImportBundle\Definition\EntityDefinition;
+use Juf\DoctrineImportBundle\Definition\EnumCaseDefinition;
+use Juf\DoctrineImportBundle\Definition\EnumDefinition;
 use Juf\DoctrineImportBundle\Definition\FieldDefinition;
 use Juf\DoctrineImportBundle\Definition\IdGeneration;
 use Juf\DoctrineImportBundle\Definition\IndexDefinition;
@@ -32,6 +34,8 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(ManyToOneDefinition::class)]
 #[UsesClass(OneToManyDefinition::class)]
 #[UsesClass(IndexDefinition::class)]
+#[UsesClass(EnumDefinition::class)]
+#[UsesClass(EnumCaseDefinition::class)]
 final class AttributeMappingStrategyTest extends TestCase
 {
     #[Test]
@@ -124,6 +128,33 @@ final class AttributeMappingStrategyTest extends TestCase
         self::assertStringContainsString("    #[ORM\\Column(name: 'price_doubled', type: Types::INTEGER, insertable: false, updatable: false, generated: 'ALWAYS')]\n    private ?int \$priceDoubled = null;", $code);
         self::assertStringContainsString("public function getPriceDoubled(): ?int\n    {\n        return \$this->priceDoubled;\n    }", $code);
         self::assertStringNotContainsString('function setPriceDoubled(', $code);
+    }
+
+    #[Test]
+    public function it_maps_an_enum_field_with_its_enum_type(): void
+    {
+        $code = $this->render(DefinitionBuilder::entity('Film', [
+            DefinitionBuilder::identityId(),
+            DefinitionBuilder::field('rating', 'rating', 'enum', nullable: true, enum: $this->filmRating()),
+        ]));
+
+        self::assertStringContainsString("use App\\Enum\\FilmRating;\n", $code);
+        self::assertStringContainsString("    #[ORM\\Column(name: 'rating', type: Types::ENUM, nullable: true, enumType: FilmRating::class)]\n    private ?FilmRating \$rating = null;", $code);
+        self::assertStringContainsString('public function getRating(): ?FilmRating', $code);
+        self::assertStringContainsString('public function setRating(?FilmRating $rating): static', $code);
+    }
+
+    #[Test]
+    public function it_initializes_an_enum_property_with_the_case_of_its_default(): void
+    {
+        $code = $this->render(DefinitionBuilder::entity('Film', [
+            DefinitionBuilder::identityId(),
+            DefinitionBuilder::field('rating', 'rating', 'enum', default: 'PG-13', enum: $this->filmRating()),
+            DefinitionBuilder::field('previousRating', 'previous_rating', 'enum', enum: $this->filmRating()),
+        ]));
+
+        self::assertStringContainsString("    #[ORM\\Column(name: 'rating', type: Types::ENUM, enumType: FilmRating::class, options: ['default' => 'PG-13'])]\n    private FilmRating \$rating = FilmRating::Pg13;", $code);
+        self::assertStringContainsString("    private FilmRating \$previousRating;\n", $code);
     }
 
     #[Test]
@@ -322,5 +353,10 @@ final class AttributeMappingStrategyTest extends TestCase
     private function render(EntityDefinition $entity): string
     {
         return $this->renderFile($entity)->contents;
+    }
+
+    private function filmRating(): EnumDefinition
+    {
+        return new EnumDefinition('FilmRating', [new EnumCaseDefinition('G', 'G'), new EnumCaseDefinition('Pg13', 'PG-13')]);
     }
 }
