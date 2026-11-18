@@ -11,15 +11,16 @@ use Juf\DoctrineImportBundle\Definition\FieldDefinition;
 use Juf\DoctrineImportBundle\Definition\GenerationModel;
 use Juf\DoctrineImportBundle\Definition\ManyToOneDefinition;
 use Juf\DoctrineImportBundle\Definition\OneToManyDefinition;
+use Juf\DoctrineImportBundle\Definition\OneToOneDefinition;
 use Juf\DoctrineImportBundle\Diagnostic\DiagnosticCollector;
 use Juf\DoctrineImportBundle\Diagnostic\Severity;
-use Juf\DoctrineImportBundle\Schema\ColumnMetadata;
 use Juf\DoctrineImportBundle\Schema\ForeignKeyMetadata;
 use Juf\DoctrineImportBundle\Schema\SchemaMetadata;
 use Juf\DoctrineImportBundle\Schema\TableMetadata;
 
 /**
- * Turns single-column foreign keys into a ManyToOne association and its inverse OneToMany collection.
+ * Turns single-column foreign keys into a ManyToOne association and its inverse OneToMany collection, or into an
+ * owning OneToOne association when the foreign key is unique.
  * Anything Doctrine cannot map safely stays a scalar field and is reported.
  */
 final readonly class RelationAnalyzer
@@ -66,8 +67,10 @@ final readonly class RelationAnalyzer
             return;
         }
 
-        if ($this->isUnique($table, $column)) {
-            $diagnostics->report(Severity::Info, 'relation.one_to_one_as_many_to_one', \sprintf('Column "%s.%s" is a unique foreign key: it is mapped as ManyToOne, OneToOne is not generated yet.', $table->name, $column), $table->name, $column);
+        $isOneToOne = $this->isUnique($table, $column);
+        if ($isOneToOne) {
+            // The inverse side of a OneToOne cannot be lazy: generating it would load the owning entity every time.
+            $diagnostics->report(Severity::Info, 'relation.one_to_one_without_inverse_side', \sprintf('Column "%s.%s" is mapped as a OneToOne association without inverse side: Doctrine always loads the inverse side of a OneToOne, add it by hand if needed.', $table->name, $column), $table->name, $column);
         }
 
         // Doctrine maps ON DELETE on the join column, but has no equivalent for ON UPDATE.
@@ -76,12 +79,20 @@ final readonly class RelationAnalyzer
         }
 
         $propertyName = $this->propertyName($table, $entity, $column, $relations, $diagnostics);
-        $inversedBy = $this->inverseName($table, $entity, $propertyName, $foreignKey->foreignTable);
         [$referencedColumn] = $foreignKey->foreignColumns;
+        $nullable = $this->isNullable($table, $column);
+        $onDelete = 'NO ACTION' === $foreignKey->onDelete ? null : $foreignKey->onDelete;
 
+        if ($isOneToOne) {
+            $relations->addOneToOne($table->name, new OneToOneDefinition($propertyName, $target->className, $column, $referencedColumn, $nullable, $onDelete));
+
+            return;
+        }
+
+        $inversedBy = $this->inverseName($table, $entity, $propertyName, $foreignKey->foreignTable);
         $relations->add(
             $table->name,
-            new ManyToOneDefinition($propertyName, $target->className, $column, $referencedColumn, $this->isNullable($table, $column), 'NO ACTION' === $foreignKey->onDelete ? null : $foreignKey->onDelete, $inversedBy),
+            new ManyToOneDefinition($propertyName, $target->className, $column, $referencedColumn, $nullable, $onDelete, $inversedBy),
             $foreignKey->foreignTable,
             new OneToManyDefinition($inversedBy, $entity->className, $propertyName),
         );
@@ -164,11 +175,6 @@ final readonly class RelationAnalyzer
 
     private function isNullable(TableMetadata $table, string $columnName): bool
     {
-        $nullableColumns = array_map(
-            static fn (ColumnMetadata $column): string => $column->name,
-            array_filter($table->columns, static fn (ColumnMetadata $column): bool => $column->nullable),
-        );
-
-        return \in_array($columnName, $nullableColumns, true);
+        return array_column($table->columns, 'nullable', 'name')[$columnName] ?? false;
     }
 }

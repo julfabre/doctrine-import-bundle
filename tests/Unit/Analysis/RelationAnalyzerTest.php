@@ -21,6 +21,7 @@ use Juf\DoctrineImportBundle\Definition\GenerationModel;
 use Juf\DoctrineImportBundle\Definition\IndexDefinition;
 use Juf\DoctrineImportBundle\Definition\ManyToOneDefinition;
 use Juf\DoctrineImportBundle\Definition\OneToManyDefinition;
+use Juf\DoctrineImportBundle\Definition\OneToOneDefinition;
 use Juf\DoctrineImportBundle\Diagnostic\Diagnostic;
 use Juf\DoctrineImportBundle\Diagnostic\DiagnosticCollector;
 use Juf\DoctrineImportBundle\Schema\ColumnMetadata;
@@ -59,6 +60,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(IndexMetadata::class)]
 #[UsesClass(IndexDefinition::class)]
 #[UsesClass(EnumAnalyzer::class)]
+#[CoversClass(OneToOneDefinition::class)]
 final class RelationAnalyzerTest extends TestCase
 {
     use DefinitionAssertions;
@@ -141,17 +143,75 @@ final class RelationAnalyzerTest extends TestCase
     }
 
     #[Test]
-    public function it_maps_a_unique_foreign_key_as_many_to_one_with_an_info(): void
+    public function it_maps_a_unique_foreign_key_to_a_one_to_one_association(): void
+    {
+        $model = $this->analyze($this->author(), $this->profile(nullable: false, onDelete: 'CASCADE'));
+
+        $profile = self::entity($model, 'Profile');
+        self::assertEquals([new OneToOneDefinition('author', 'Author', 'author_id', 'id', false, 'CASCADE')], $profile->oneToOne);
+        self::assertSame([], $profile->manyToOne);
+        self::assertSame(['id'], self::propertyNames($profile));
+    }
+
+    #[Test]
+    public function it_generates_no_inverse_side_for_a_one_to_one_and_reports_it(): void
+    {
+        $model = $this->analyze($this->author(), $this->profile());
+
+        self::assertSame([], self::entity($model, 'Author')->oneToMany);
+        self::assertSame([['info', 'relation.one_to_one_without_inverse_side', 'profile', 'author_id']], self::diagnostics($model));
+        self::assertSame(
+            'Column "profile.author_id" is mapped as a OneToOne association without inverse side: Doctrine always loads the inverse side of a OneToOne, add it by hand if needed.',
+            $model->diagnostics[0]->message ?? null,
+        );
+    }
+
+    #[Test]
+    public function it_renames_an_association_whose_name_is_taken_by_a_one_to_one(): void
     {
         $model = $this->analyze($this->author(), SchemaBuilder::table('profile', [
             SchemaBuilder::id(),
             SchemaBuilder::column('author_id'),
+            SchemaBuilder::column('id_author'),
+        ], foreignKeys: [
+            SchemaBuilder::foreignKey(['author_id'], 'author'),
+            SchemaBuilder::foreignKey(['id_author'], 'author'),
+        ], indexes: [new IndexMetadata('uniq_profile_author', ['author_id'], unique: true)]));
+
+        $profile = self::entity($model, 'Profile');
+        self::assertSame('author', $profile->oneToOne[0]->propertyName ?? null);
+        self::assertSame('idAuthor', self::onlyManyToOne($profile)->propertyName);
+    }
+
+    #[Test]
+    public function it_keeps_a_many_to_one_for_a_foreign_key_in_a_composite_unique_index(): void
+    {
+        $model = $this->analyze($this->author(), SchemaBuilder::table('profile', [
+            SchemaBuilder::id(),
+            SchemaBuilder::column('author_id'),
+            SchemaBuilder::column('kind', 'string', length: 20),
         ], foreignKeys: [SchemaBuilder::foreignKey(['author_id'], 'author')], indexes: [
-            new IndexMetadata('uniq_profile_author', ['author_id'], unique: true),
+            new IndexMetadata('uniq_profile_author_kind', ['author_id', 'kind'], unique: true),
         ]));
 
-        self::assertSame('author', self::onlyManyToOne(self::entity($model, 'Profile'))->propertyName);
-        self::assertSame([['info', 'relation.one_to_one_as_many_to_one', 'profile', 'author_id']], self::diagnostics($model));
+        $profile = self::entity($model, 'Profile');
+        self::assertSame('author', self::onlyManyToOne($profile)->propertyName);
+        self::assertSame([], $profile->oneToOne);
+    }
+
+    #[Test]
+    public function it_maps_a_self_referencing_unique_foreign_key_to_a_one_to_one(): void
+    {
+        $model = $this->analyze(SchemaBuilder::table('node', [
+            SchemaBuilder::id(),
+            SchemaBuilder::column('next_id', nullable: true),
+        ], foreignKeys: [SchemaBuilder::foreignKey(['next_id'], 'node')], indexes: [
+            new IndexMetadata('uniq_node_next', ['next_id'], unique: true),
+        ]));
+
+        $node = self::entity($model, 'Node');
+        self::assertEquals([new OneToOneDefinition('next', 'Node', 'next_id', 'id', true, null)], $node->oneToOne);
+        self::assertSame([], $node->oneToMany);
     }
 
     #[Test]
@@ -304,6 +364,16 @@ final class RelationAnalyzerTest extends TestCase
     private function author(): TableMetadata
     {
         return SchemaBuilder::table('author', [SchemaBuilder::id()]);
+    }
+
+    private function profile(bool $nullable = true, string $onDelete = 'NO ACTION'): TableMetadata
+    {
+        return SchemaBuilder::table('profile', [
+            SchemaBuilder::id(),
+            SchemaBuilder::column('author_id', nullable: $nullable),
+        ], foreignKeys: [SchemaBuilder::foreignKey(['author_id'], 'author', onDelete: $onDelete)], indexes: [
+            new IndexMetadata('uniq_profile_author', ['author_id'], unique: true),
+        ]);
     }
 
     private function post(): TableMetadata

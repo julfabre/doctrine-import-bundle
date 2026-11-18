@@ -7,7 +7,6 @@ namespace Juf\DoctrineImportBundle\Rendering;
 use Juf\DoctrineImportBundle\Definition\EntityDefinition;
 use Juf\DoctrineImportBundle\Definition\FieldDefinition;
 use Juf\DoctrineImportBundle\Definition\IdGeneration;
-use Juf\DoctrineImportBundle\Definition\ManyToOneDefinition;
 use Juf\DoctrineImportBundle\Definition\OneToManyDefinition;
 use Nette\PhpGenerator\ClassType;
 use Nette\PhpGenerator\Literal;
@@ -51,7 +50,21 @@ final readonly class AttributeMappingStrategy implements MappingStrategyInterfac
         }
 
         foreach ($entity->manyToOne as $association) {
-            self::mapManyToOne($class, $association);
+            self::mapToOne($class, 'ManyToOne', $association->propertyName, $association->targetEntity, $association->inversedBy, [
+                'name' => $association->joinColumn,
+                'referencedColumnName' => $association->referencedColumn,
+                'nullable' => $association->nullable,
+                'onDelete' => $association->onDelete,
+            ]);
+        }
+
+        foreach ($entity->oneToOne as $association) {
+            self::mapToOne($class, 'OneToOne', $association->propertyName, $association->targetEntity, null, [
+                'name' => $association->joinColumn,
+                'referencedColumnName' => $association->referencedColumn,
+                'nullable' => $association->nullable,
+                'onDelete' => $association->onDelete,
+            ]);
         }
 
         foreach ($entity->oneToMany as $collection) {
@@ -127,19 +140,18 @@ final readonly class AttributeMappingStrategy implements MappingStrategyInterfac
         ]);
     }
 
-    private static function mapManyToOne(ClassType $class, ManyToOneDefinition $association): void
+    /**
+     * @param 'ManyToOne'|'OneToOne' $type
+     * @param array<string, mixed>   $joinColumn
+     */
+    private static function mapToOne(ClassType $class, string $type, string $propertyName, string $targetEntity, ?string $inversedBy, array $joinColumn): void
     {
-        $property = $class->getProperty($association->propertyName);
-        $property->addAttribute(self::ORM.'\ManyToOne', self::withoutNulls([
-            'targetEntity' => new Literal($association->targetEntity.'::class'),
-            'inversedBy' => $association->inversedBy,
+        $property = $class->getProperty($propertyName);
+        $property->addAttribute(self::ORM.'\\'.$type, self::withoutNulls([
+            'targetEntity' => new Literal($targetEntity.'::class'),
+            'inversedBy' => $inversedBy,
         ]));
-        $property->addAttribute(self::ORM.'\JoinColumn', self::withoutNulls([
-            'name' => $association->joinColumn,
-            'referencedColumnName' => $association->referencedColumn,
-            'nullable' => $association->nullable,
-            'onDelete' => $association->onDelete,
-        ]));
+        $property->addAttribute(self::ORM.'\JoinColumn', self::withoutNulls($joinColumn));
     }
 
     private static function mapOneToMany(ClassType $class, OneToManyDefinition $collection): void
