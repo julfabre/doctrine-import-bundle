@@ -41,6 +41,36 @@ final class GenerationReportPrinterTest extends TestCase
     }
 
     #[Test]
+    public function it_titles_the_files_and_diagnostics_sections(): void
+    {
+        $output = new BufferedOutput();
+        $report = new GenerationReport(
+            [new WrittenFile('App\Entity\Post', '/app/src/Entity/Post.php', FileStatus::Created)],
+            [new Diagnostic(Severity::Info, 'table.composite_primary_key', 'Composite.', 'order_line')],
+        );
+
+        (new GenerationReportPrinter('/app'))->print(new SymfonyStyle(new ArrayInput([]), $output), $report, false);
+
+        $display = $output->fetch();
+        self::assertMatchesRegularExpression('#Files\n-----\n#', $display);
+        self::assertMatchesRegularExpression('#Diagnostics\n-----------\n#', $display);
+    }
+
+    #[Test]
+    public function it_shows_no_diagnostics_section_when_there_is_nothing_to_report(): void
+    {
+        $output = new BufferedOutput();
+        $report = new GenerationReport([new WrittenFile('App\Entity\Post', '/app/src/Entity/Post.php', FileStatus::Created)], []);
+
+        (new GenerationReportPrinter('/app'))->print(new SymfonyStyle(new ArrayInput([]), $output), $report, false);
+
+        $display = $output->fetch();
+        self::assertStringNotContainsString('Diagnostics', $display);
+        self::assertStringNotContainsString('Severity', $display);
+        self::assertStringContainsString('Generation complete: 0 error(s), 0 warning(s).', $display);
+    }
+
+    #[Test]
     public function it_lists_errors_first_and_reports_an_incomplete_generation(): void
     {
         $output = new BufferedOutput();
