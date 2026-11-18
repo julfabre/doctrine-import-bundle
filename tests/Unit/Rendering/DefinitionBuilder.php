@@ -12,6 +12,7 @@ use Juf\DoctrineImportBundle\Definition\IdGeneration;
 use Juf\DoctrineImportBundle\Definition\IndexDefinition;
 use Juf\DoctrineImportBundle\Definition\ManyToOneDefinition;
 use Juf\DoctrineImportBundle\Definition\OneToManyDefinition;
+use Juf\DoctrineImportBundle\Definition\OneToOneDefinition;
 
 /**
  * Builds in-memory entity definitions for the rendering tests.
@@ -23,6 +24,7 @@ final class DefinitionBuilder
      * @param list<ManyToOneDefinition> $manyToOne
      * @param list<OneToManyDefinition> $oneToMany
      * @param list<IndexDefinition>     $indexes
+     * @param list<OneToOneDefinition>  $oneToOne
      */
     public static function entity(
         string $className,
@@ -32,6 +34,7 @@ final class DefinitionBuilder
         array $indexes = [],
         ?string $tableName = null,
         ?string $comment = null,
+        array $oneToOne = [],
     ): EntityDefinition {
         return new EntityDefinition(
             $className,
@@ -42,6 +45,7 @@ final class DefinitionBuilder
             $oneToMany,
             $indexes,
             $comment,
+            $oneToOne,
         );
     }
 

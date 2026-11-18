@@ -25,6 +25,13 @@ final class BlogSchema
                 SchemaBuilder::column('bio', 'text', nullable: true),
                 SchemaBuilder::column('is_active', 'boolean', default: '1'),
             ], indexes: [new IndexMetadata('uniq_author_email', ['email'], unique: true)], comment: 'Blog authors'),
+            SchemaBuilder::table('author_profile', [
+                SchemaBuilder::id(),
+                SchemaBuilder::column('author_id'),
+                SchemaBuilder::column('website', 'string', nullable: true, length: 255),
+            ], foreignKeys: [SchemaBuilder::foreignKey(['author_id'], 'author', onDelete: 'CASCADE')], indexes: [
+                new IndexMetadata('uniq_author_profile_author', ['author_id'], unique: true),
+            ]),
             SchemaBuilder::table('category', [
                 SchemaBuilder::id(),
                 SchemaBuilder::column('parent_id', nullable: true),

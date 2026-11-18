@@ -12,6 +12,7 @@ final readonly class EntityDefinition
      * @param list<ManyToOneDefinition> $manyToOne
      * @param list<OneToManyDefinition> $oneToMany
      * @param list<IndexDefinition>     $indexes
+     * @param list<OneToOneDefinition>  $oneToOne
      */
     public function __construct(
         public string $className,
@@ -22,6 +23,7 @@ final readonly class EntityDefinition
         public array $oneToMany,
         public array $indexes,
         public ?string $comment,
+        public array $oneToOne = [],
     ) {
     }
 
@@ -29,8 +31,9 @@ final readonly class EntityDefinition
      * @param list<FieldDefinition>     $fields
      * @param list<ManyToOneDefinition> $manyToOne
      * @param list<OneToManyDefinition> $oneToMany
+     * @param list<OneToOneDefinition>  $oneToOne
      */
-    public function withAssociations(array $fields, array $manyToOne, array $oneToMany): self
+    public function withAssociations(array $fields, array $manyToOne, array $oneToMany, array $oneToOne): self
     {
         return new self(
             $this->className,
@@ -41,6 +44,7 @@ final readonly class EntityDefinition
             $oneToMany,
             $this->indexes,
             $this->comment,
+            $oneToOne,
         );
     }
 }

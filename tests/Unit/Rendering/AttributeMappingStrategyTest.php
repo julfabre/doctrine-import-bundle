@@ -13,6 +13,7 @@ use Juf\DoctrineImportBundle\Definition\IdGeneration;
 use Juf\DoctrineImportBundle\Definition\IndexDefinition;
 use Juf\DoctrineImportBundle\Definition\ManyToOneDefinition;
 use Juf\DoctrineImportBundle\Definition\OneToManyDefinition;
+use Juf\DoctrineImportBundle\Definition\OneToOneDefinition;
 use Juf\DoctrineImportBundle\Rendering\AttributeMappingStrategy;
 use Juf\DoctrineImportBundle\Rendering\EntityClassBuilder;
 use Juf\DoctrineImportBundle\Rendering\GeneratedFile;
@@ -36,6 +37,7 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(IndexDefinition::class)]
 #[UsesClass(EnumDefinition::class)]
 #[UsesClass(EnumCaseDefinition::class)]
+#[UsesClass(OneToOneDefinition::class)]
 final class AttributeMappingStrategyTest extends TestCase
 {
     #[Test]
@@ -155,6 +157,33 @@ final class AttributeMappingStrategyTest extends TestCase
 
         self::assertStringContainsString("    #[ORM\\Column(name: 'rating', type: Types::ENUM, enumType: FilmRating::class, options: ['default' => 'PG-13'])]\n    private FilmRating \$rating = FilmRating::Pg13;", $code);
         self::assertStringContainsString("    private FilmRating \$previousRating;\n", $code);
+    }
+
+    #[Test]
+    public function it_renders_a_one_to_one_association_with_its_join_column(): void
+    {
+        $code = $this->render(DefinitionBuilder::entity('Profile', oneToOne: [new OneToOneDefinition('author', 'Author', 'author_id', 'id', false, 'CASCADE')]));
+
+        self::assertStringContainsString(
+            "    #[ORM\\OneToOne(targetEntity: Author::class)]\n"
+            ."    #[ORM\\JoinColumn(name: 'author_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]\n"
+            .'    private ?Author $author = null;',
+            $code,
+        );
+        self::assertStringContainsString('public function getAuthor(): ?Author', $code);
+        self::assertStringContainsString('public function setAuthor(?Author $author): static', $code);
+    }
+
+    #[Test]
+    public function it_renders_the_unique_constraint_of_a_one_to_one_with_its_name(): void
+    {
+        $code = $this->render(DefinitionBuilder::entity(
+            'Profile',
+            indexes: [new IndexDefinition('uniq_profile_author', ['author_id'], true)],
+            oneToOne: [new OneToOneDefinition('author', 'Author', 'author_id', 'id', true, null)],
+        ));
+
+        self::assertStringContainsString("#[ORM\\UniqueConstraint(name: 'uniq_profile_author', columns: ['author_id'])]", $code);
     }
 
     #[Test]

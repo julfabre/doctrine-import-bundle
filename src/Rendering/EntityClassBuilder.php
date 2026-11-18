@@ -10,7 +10,6 @@ use Juf\DoctrineImportBundle\Definition\EntityDefinition;
 use Juf\DoctrineImportBundle\Definition\EnumDefinition;
 use Juf\DoctrineImportBundle\Definition\FieldDefinition;
 use Juf\DoctrineImportBundle\Definition\IdGeneration;
-use Juf\DoctrineImportBundle\Definition\ManyToOneDefinition;
 use Juf\DoctrineImportBundle\Definition\OneToManyDefinition;
 use Nette\PhpGenerator\ClassType;
 use Nette\PhpGenerator\Literal;
@@ -49,7 +48,11 @@ final readonly class EntityClassBuilder
         }
 
         foreach ($entity->manyToOne as $association) {
-            $this->addManyToOne($class, $association, $namespace->getName().'\\'.$association->targetEntity);
+            $this->addToOne($class, $association->propertyName, $namespace->getName().'\\'.$association->targetEntity);
+        }
+
+        foreach ($entity->oneToOne as $association) {
+            $this->addToOne($class, $association->propertyName, $namespace->getName().'\\'.$association->targetEntity);
         }
 
         foreach ($entity->oneToMany as $collection) {
@@ -115,11 +118,11 @@ final readonly class EntityClassBuilder
     /**
      * @param string $targetClass fully qualified, so that the printer resolves it against the namespace
      */
-    private function addManyToOne(ClassType $class, ManyToOneDefinition $association, string $targetClass): void
+    private function addToOne(ClassType $class, string $propertyName, string $targetClass): void
     {
-        $class->addProperty($association->propertyName)->setPrivate()->setType($targetClass)->setNullable()->setValue(null);
-        $this->addGetter($class, 'get'.ucfirst($association->propertyName), $association->propertyName, $targetClass, true);
-        $this->addSetter($class, $association->propertyName, $targetClass, true);
+        $class->addProperty($propertyName)->setPrivate()->setType($targetClass)->setNullable()->setValue(null);
+        $this->addGetter($class, 'get'.ucfirst($propertyName), $propertyName, $targetClass, true);
+        $this->addSetter($class, $propertyName, $targetClass, true);
     }
 
     /**

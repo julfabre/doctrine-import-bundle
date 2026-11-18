@@ -46,7 +46,7 @@ final class DoctrineMappingTest extends TestCase
 
         $entityManager = DoctrineTestConfiguration::entityManager(DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]), $this->directory.'/Entity');
 
-        self::assertCount(4, $entityManager->getMetadataFactory()->getAllMetadata());
+        self::assertCount(5, $entityManager->getMetadataFactory()->getAllMetadata());
         self::assertSame([], (new SchemaValidator($entityManager))->validateMapping());
     }
 
