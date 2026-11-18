@@ -8,6 +8,8 @@ use Juf\DoctrineImportBundle\Analysis\ClassNameResolver;
 use Juf\DoctrineImportBundle\Analysis\EntityAnalyzer;
 use Juf\DoctrineImportBundle\Analysis\EnumAnalyzer;
 use Juf\DoctrineImportBundle\Analysis\FieldAnalyzer;
+use Juf\DoctrineImportBundle\Analysis\JoinTableDetector;
+use Juf\DoctrineImportBundle\Analysis\ManyToManyAnalyzer;
 use Juf\DoctrineImportBundle\Analysis\MappedType;
 use Juf\DoctrineImportBundle\Analysis\Naming\ClassName;
 use Juf\DoctrineImportBundle\Analysis\Naming\DefaultNamingStrategy;
@@ -64,6 +66,8 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(IndexMetadata::class)]
 #[UsesClass(IndexDefinition::class)]
 #[UsesClass(EnumAnalyzer::class)]
+#[UsesClass(JoinTableDetector::class)]
+#[UsesClass(ManyToManyAnalyzer::class)]
 final class SchemaAnalyzerTest extends TestCase
 {
     use DefinitionAssertions;

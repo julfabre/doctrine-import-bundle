@@ -35,11 +35,12 @@ final readonly class EntityClassBuilder
     {
         $class = $namespace->addClass($entity->className);
 
-        if ([] !== $entity->oneToMany) {
+        $collections = [...array_column($entity->oneToMany, 'propertyName'), ...array_column($entity->manyToMany, 'propertyName')];
+        if ([] !== $collections) {
             $namespace->addUse(self::ARRAY_COLLECTION)->addUse(self::COLLECTION);
             $class->addMethod('__construct')->setBody(implode("\n", array_map(
-                static fn (OneToManyDefinition $collection): string => \sprintf('$this->%s = new ArrayCollection();', $collection->propertyName),
-                $entity->oneToMany,
+                static fn (string $collection): string => \sprintf('$this->%s = new ArrayCollection();', $collection),
+                $collections,
             )));
         }
 
@@ -57,6 +58,10 @@ final readonly class EntityClassBuilder
 
         foreach ($entity->oneToMany as $collection) {
             $this->addOneToMany($class, $collection, $namespace->getName().'\\'.$collection->targetEntity);
+        }
+
+        foreach ($entity->manyToMany as $collection) {
+            $this->addManyToMany($class, $collection->propertyName, $collection->targetEntity, $namespace->getName().'\\'.$collection->targetEntity, $collection->mappedBy);
         }
 
         return $class;
@@ -162,6 +167,40 @@ final readonly class EntityClassBuilder
 
             return $this;
             PHP, $name, $element, ucfirst($collection->mappedBy), $owningSetter));
+    }
+
+    /**
+     * @param string      $targetClass fully qualified, so that the printer resolves it against the namespace
+     * @param string|null $mappedBy    collection of the owning side, set on the inverse side
+     */
+    private function addManyToMany(ClassType $class, string $name, string $targetEntity, string $targetClass, ?string $mappedBy): void
+    {
+        $element = $this->inflector->singularize($name);
+
+        $class->addProperty($name)->setPrivate()->setType(self::COLLECTION)
+            ->addComment(\sprintf('@var Collection<int, %s>', $targetEntity));
+
+        $class->addMethod('get'.ucfirst($name))->setReturnType(self::COLLECTION)
+            ->addComment(\sprintf('@return Collection<int, %s>', $targetEntity))
+            ->setBody(\sprintf('return $this->%s;', $name));
+
+        // Doctrine only writes the owning side: the inverse side keeps it in sync.
+        $owningElement = null === $mappedBy ? null : ucfirst($this->inflector->singularize($mappedBy));
+
+        $add = $class->addMethod('add'.ucfirst($element))->setReturnType('static');
+        $add->addParameter($element)->setType($targetClass);
+        $add->setBody(\sprintf(
+            "if (!\$this->%1\$s->contains(\$%2\$s)) {\n    \$this->%1\$s->add(\$%2\$s);%3\$s\n}\n\nreturn \$this;",
+            $name,
+            $element,
+            null === $owningElement ? '' : \sprintf("\n    \$%s->add%s(\$this);", $element, $owningElement),
+        ));
+
+        $remove = $class->addMethod('remove'.ucfirst($element))->setReturnType('static');
+        $remove->addParameter($element)->setType($targetClass);
+        $remove->setBody(null === $owningElement
+            ? \sprintf("\$this->%s->removeElement(\$%s);\n\nreturn \$this;", $name, $element)
+            : \sprintf("if (\$this->%1\$s->removeElement(\$%2\$s)) {\n    \$%2\$s->remove%3\$s(\$this);\n}\n\nreturn \$this;", $name, $element, $owningElement));
     }
 
     private function addGetter(ClassType $class, string $name, string $property, string $type, bool $nullable): void

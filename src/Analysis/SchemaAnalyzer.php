@@ -22,15 +22,26 @@ final readonly class SchemaAnalyzer
 
     private RelationAnalyzer $relationAnalyzer;
 
+    private ManyToManyAnalyzer $manyToManyAnalyzer;
+
+    private JoinTableDetector $joinTables;
+
     public function __construct(NamingStrategyInterface $naming = new DefaultNamingStrategy(), TypeMapper $types = new TypeMapper())
     {
         $this->entityAnalyzer = new EntityAnalyzer($naming, $types);
         $this->relationAnalyzer = new RelationAnalyzer($naming);
+        $this->manyToManyAnalyzer = new ManyToManyAnalyzer($naming);
+        $this->joinTables = new JoinTableDetector();
     }
 
     public function analyze(SchemaMetadata $schema): GenerationModel
     {
-        $model = $this->relationAnalyzer->analyze($schema, $this->entityAnalyzer->analyze($schema));
+        // Join tables become ManyToMany associations, not entities.
+        $joinTables = $this->joinTables->detect($schema);
+        $entitySchema = $this->joinTables->withoutJoinTables($schema, $joinTables);
+
+        $model = $this->relationAnalyzer->analyze($entitySchema, $this->entityAnalyzer->analyze($entitySchema));
+        $model = $this->manyToManyAnalyzer->analyze($model, $joinTables);
 
         $entities = $model->entities;
         usort($entities, static fn (EntityDefinition $left, EntityDefinition $right): int => $left->className <=> $right->className);

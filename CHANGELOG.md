@@ -16,6 +16,9 @@ All notable changes to this project are documented in this file. The format foll
   `--enum-namespace` / `--enum-dir` options.
 - A foreign key covered by a single-column unique index becomes an owning `OneToOne` association, without
   inverse side, instead of a `ManyToOne`.
+- A pure join table becomes a `ManyToMany` association instead of an entity with two scalar fields: the table
+  of the first primary key column owns it, the other side is mapped by it, and a table joining itself only gets
+  the owning side.
 
 ### Changed
 
