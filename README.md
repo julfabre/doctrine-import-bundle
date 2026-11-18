@@ -65,7 +65,7 @@ class Post
 
 ## Requirements
 
-PHP 8.2+, Symfony 6.4 / 7.x / 8.x, Doctrine ORM 3, Doctrine DBAL 4.6+, DoctrineBundle 2.11+ / 3.x.
+PHP 8.2+, Symfony 6.4 / 7.x / 8.x, Doctrine ORM 3.3+, Doctrine DBAL 4.6+, DoctrineBundle 2.11+ / 3.x.
 
 ## Documentation
 

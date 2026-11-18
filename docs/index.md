@@ -10,7 +10,7 @@ Generate Doctrine ORM entities and repositories from an existing database.
 |---|---|
 | PHP | 8.2 or higher |
 | Symfony | 6.4, 7.x, 8.x |
-| Doctrine ORM | 3.x |
+| Doctrine ORM | 3.3+ |
 | Doctrine DBAL | 4.6+ |
 | DoctrineBundle | 2.11+, 3.x |
 | Databases | PostgreSQL, MySQL, MariaDB, SQLite |
@@ -49,6 +49,7 @@ repository per table. It prints the files with their status, then the diagnostic
 | `--table-prefix=PREFIX` | Prefix removed from table names before naming classes, repeatable (`wp_posts` → `Post`) |
 | `--namespace=NS` / `--dir=PATH` | Namespace and directory of the entities |
 | `--repository-namespace=NS` / `--repository-dir=PATH` | Namespace and directory of the repositories |
+| `--enum-namespace=NS` / `--enum-dir=PATH` | Namespace and directory of the enums generated for `ENUM` columns |
 | `--dry-run` | List the files without writing them |
 | `--force` | Overwrite existing files |
 
@@ -76,6 +77,9 @@ juf_doctrine_import:
     repository:
         namespace: 'App\Repository'
         dir: '%kernel.project_dir%/src/Repository'
+    enum:
+        namespace: 'App\Enum'
+        dir: '%kernel.project_dir%/src/Enum'
 ```
 
 ## Generated code
@@ -85,6 +89,9 @@ juf_doctrine_import:
 - Every column is named and typed explicitly. Dates use immutable types, decimals are strings.
 - Single-column foreign keys become `ManyToOne` associations with their inverse `OneToMany`
   collection (`children` for a table referencing itself).
+- A MySQL or MariaDB `ENUM` column becomes a string-backed PHP enum named after the entity and the property
+  (`film.rating` → `FilmRating`, cases `G`, `Pg13`…), mapped with `type: Types::ENUM, enumType: FilmRating::class`.
+  One enum per column, even when two columns share the same values.
 - Generated columns (`GENERATED ALWAYS AS …`) are read-only: `insertable: false, updatable: false`,
   `generated: 'ALWAYS'` so that Doctrine reads the computed value back after each write, and no setter.
 - A PostgreSQL `SERIAL` primary key (default `nextval('product_id_seq'::regclass)`) keeps using its sequence:
@@ -117,7 +124,8 @@ guessed code.
 | `table.composite_primary_key` | info | Supported, but Doctrine advises against it |
 | `relation.one_to_one_as_many_to_one` | info | Unique foreign key mapped as `ManyToOne` |
 | `column.generated` | info | Generated column mapped read-only; its expression is not part of the mapping |
-| `column.enum_as_string`, `column.binary_as_mixed` | info | Type mapped approximately |
+| `column.enum_as_string` | warning | `ENUM` column kept as a string: a value gives no valid case name, two values give the same case, or the enum name is already taken |
+| `column.binary_as_mixed` | info | Type mapped approximately |
 | `naming.table_prefix_detected` | info | Every table shares a known prefix: configure it |
 
 ## Known limitations
@@ -134,8 +142,8 @@ guessed code.
   exclude the table.
 - **`ON UPDATE` actions** of foreign keys cannot be expressed with Doctrine: they are lost if the schema is
   later created from the entities.
-- **Enums**: MySQL `ENUM` columns become `string` (the allowed values are not kept); `SET` columns become
-  `simple_array`. PHP enums are planned.
+- **Enums**: PostgreSQL enum types (`CREATE TYPE … AS ENUM`) are unreadable by Doctrine DBAL (`table.unreadable`);
+  MySQL `SET` columns become `simple_array`.
 - **Charsets and collations** of columns are not mapped.
 - **MySQL `YEAR`** is read by Doctrine DBAL as a `date` column: map or exclude it before generating.
 - **Views** are not generated.

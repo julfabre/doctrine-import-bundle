@@ -11,6 +11,16 @@ All notable changes to this project are documented in this file. The format foll
 - Generated columns (`GENERATED ALWAYS AS …`) are detected on MySQL, MariaDB and PostgreSQL and mapped
   read-only (`insertable: false`, `updatable: false`, `generated: 'ALWAYS'`), without setter. On SQLite, where
   Doctrine DBAL cannot read them, they are reported.
+- MySQL and MariaDB `ENUM` columns become string-backed PHP enums (`film.rating` → `FilmRating`), mapped with
+  `type: Types::ENUM` and `enumType`. Their location is configured with `enum.namespace` / `enum.dir`, or the
+  `--enum-namespace` / `--enum-dir` options.
+
+### Changed
+
+- Doctrine ORM 3.3 or higher is required: it derives the values of an `ENUM` column from the cases of its PHP enum.
+- `NamingStrategyInterface` has two new methods, `enumClassName()` and `enumCaseName()`: custom naming strategies
+  must implement them.
+- `column.enum_as_string` is now a warning, reported only when an `ENUM` column cannot become a PHP enum.
 
 ## [0.1.1] - 2026-11-16
 
