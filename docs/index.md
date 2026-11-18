@@ -89,6 +89,8 @@ juf_doctrine_import:
 - Every column is named and typed explicitly. Dates use immutable types, decimals are strings.
 - Single-column foreign keys become `ManyToOne` associations with their inverse `OneToMany`
   collection (`children` for a table referencing itself).
+- A foreign key covered by a single-column unique index becomes an owning `OneToOne` association, without
+  inverse side: Doctrine always loads the inverse side of a `OneToOne`, so it is left for you to add when needed.
 - A MySQL or MariaDB `ENUM` column becomes a string-backed PHP enum named after the entity and the property
   (`film.rating` → `FilmRating`, cases `G`, `Pg13`…), mapped with `type: Types::ENUM, enumType: FilmRating::class`.
   One enum per column, even when two columns share the same values.
@@ -122,7 +124,7 @@ guessed code.
 | `relation.missing_target` | warning | Foreign key to a table that is not generated |
 | `table.outside_search_path` | warning | PostgreSQL table outside the default schema, not read |
 | `table.composite_primary_key` | info | Supported, but Doctrine advises against it |
-| `relation.one_to_one_as_many_to_one` | info | Unique foreign key mapped as `ManyToOne` |
+| `relation.one_to_one_without_inverse_side` | info | Unique foreign key mapped as an owning `OneToOne`, without inverse side |
 | `column.generated` | info | Generated column mapped read-only; its expression is not part of the mapping |
 | `column.enum_as_string` | warning | `ENUM` column kept as a string: a value gives no valid case name, two values give the same case, or the enum name is already taken |
 | `column.binary_as_mixed` | info | Type mapped approximately |
@@ -131,9 +133,9 @@ guessed code.
 ## Known limitations
 
 - **Associations**: only single-column foreign keys to a primary key become associations, as `ManyToOne` /
-  `OneToMany`. A unique foreign key (one-to-one) is mapped as `ManyToOne` and reported. Many-to-many join
-  tables, composite foreign keys and derived identities (a foreign key that is also the primary key) are
-  kept as scalar fields and reported.
+  `OneToMany`, or as an owning `OneToOne` when the foreign key is unique. Many-to-many join tables, composite
+  foreign keys and derived identities (a foreign key that is also the primary key) are kept as scalar fields
+  and reported.
 - **Inheritance** is never inferred: each table becomes an independent entity.
 - **Generated columns on SQLite** are not read by Doctrine DBAL: they are reported
   (`column.generated_not_read`) and missing from the entity.
