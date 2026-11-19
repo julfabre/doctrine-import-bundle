@@ -11,6 +11,7 @@ use Juf\DoctrineImportBundle\Schema\ColumnType;
 use Juf\DoctrineImportBundle\Schema\Dbal\DbalSchemaReader;
 use Juf\DoctrineImportBundle\Schema\Dbal\GeneratedColumnsReader;
 use Juf\DoctrineImportBundle\Schema\Dbal\PlatformNameResolver;
+use Juf\DoctrineImportBundle\Schema\Dbal\RowidAliasReader;
 use Juf\DoctrineImportBundle\Schema\Dbal\TableMetadataFactory;
 use Juf\DoctrineImportBundle\Schema\IndexMetadata;
 use Juf\DoctrineImportBundle\Schema\SchemaMetadata;
@@ -31,6 +32,7 @@ use PHPUnit\Framework\Attributes\UsesClass;
 #[UsesClass(TableFilter::class)]
 #[CoversClass(Diagnostic::class)]
 #[CoversClass(GeneratedColumnsReader::class)]
+#[CoversClass(RowidAliasReader::class)]
 final class PostgreSqlSchemaReaderTest extends DatabaseTestCase
 {
     #[Test]

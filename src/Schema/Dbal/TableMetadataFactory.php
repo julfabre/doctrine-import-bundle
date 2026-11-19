@@ -23,18 +23,20 @@ use Juf\DoctrineImportBundle\Schema\TableMetadata;
 final class TableMetadataFactory
 {
     /**
-     * @param list<string>     $generatedColumns names of the columns computed by the database
-     * @param list<Index>|null $indexes          indexes read from the database, without the ones DBAL adds
-     *                                           to the table for its unindexed foreign keys
+     * @param list<string>     $generatedColumns       names of the columns computed by the database
+     * @param list<Index>|null $indexes                indexes read from the database, without the ones DBAL adds
+     *                                                 to the table for its unindexed foreign keys
+     * @param list<string>     $autoIncrementedColumns names of the columns numbered by the database that DBAL does
+     *                                                 not report as auto-increment
      */
-    public function create(Table $table, array $generatedColumns = [], ?array $indexes = null): TableMetadata
+    public function create(Table $table, array $generatedColumns = [], ?array $indexes = null, array $autoIncrementedColumns = []): TableMetadata
     {
         $comment = $table->getComment();
         $primaryKey = $this->names($table->getPrimaryKeyConstraint()?->getColumnNames() ?? []);
 
         return new TableMetadata(
             $table->getObjectName()->getUnqualifiedName()->getValue(),
-            array_values(array_map(fn (Column $column): ColumnMetadata => $this->column($column, $generatedColumns), $table->getColumns())),
+            array_values(array_map(fn (Column $column): ColumnMetadata => $this->column($column, $generatedColumns, $autoIncrementedColumns), $table->getColumns())),
             $primaryKey,
             $this->indexes($indexes ?? array_values($table->getIndexes()), $primaryKey),
             array_values(array_map($this->foreignKey(...), $table->getForeignKeys())),
@@ -44,8 +46,9 @@ final class TableMetadataFactory
 
     /**
      * @param list<string> $generatedColumns
+     * @param list<string> $autoIncrementedColumns
      */
-    private function column(Column $column, array $generatedColumns): ColumnMetadata
+    private function column(Column $column, array $generatedColumns, array $autoIncrementedColumns): ColumnMetadata
     {
         $default = $column->getDefault();
         $comment = $column->getComment();
@@ -63,7 +66,7 @@ final class TableMetadataFactory
                 values: $column->getValues(),
             ),
             nullable: !$column->getNotnull(),
-            autoincrement: $column->getAutoincrement(),
+            autoincrement: $column->getAutoincrement() || \in_array($name, $autoIncrementedColumns, true),
             default: \is_scalar($default) ? (string) $default : null,
             comment: '' === $comment ? null : $comment,
             generated: \in_array($name, $generatedColumns, true),

@@ -21,6 +21,7 @@ final readonly class DbalSchemaReader implements SchemaReaderInterface
         private TableMetadataFactory $tableFactory = new TableMetadataFactory(),
         private PlatformNameResolver $platformNameResolver = new PlatformNameResolver(),
         private GeneratedColumnsReader $generatedColumnsReader = new GeneratedColumnsReader(),
+        private RowidAliasReader $rowidAliasReader = new RowidAliasReader(),
     ) {
     }
 
@@ -32,6 +33,7 @@ final readonly class DbalSchemaReader implements SchemaReaderInterface
     {
         $platform = $this->platformNameResolver->resolve($this->connection->getDatabasePlatform());
         $generatedColumns = $this->generatedColumnsReader->read($this->connection, $platform);
+        $rowidAliases = $this->rowidAliasReader->read($this->connection, $platform);
         $schemaManager = $this->connection->createSchemaManager();
         $tables = [];
         $diagnostics = [];
@@ -52,7 +54,7 @@ final readonly class DbalSchemaReader implements SchemaReaderInterface
 
             try {
                 // The indexes are read apart: the table adds one for each unindexed foreign key, which the database lacks.
-                $table = $this->tableFactory->create($schemaManager->introspectTableByQuotedName($name), $generatedColumns[$name] ?? [], $schemaManager->introspectTableIndexesByQuotedName($name));
+                $table = $this->tableFactory->create($schemaManager->introspectTableByQuotedName($name), $generatedColumns[$name] ?? [], $schemaManager->introspectTableIndexesByQuotedName($name), $rowidAliases[$name] ?? []);
             } catch (DbalException $dbalException) {
                 $diagnostics[] = $this->unreadable($name, $dbalException);
 
