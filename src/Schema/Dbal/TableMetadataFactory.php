@@ -23,9 +23,11 @@ use Juf\DoctrineImportBundle\Schema\TableMetadata;
 final class TableMetadataFactory
 {
     /**
-     * @param list<string> $generatedColumns names of the columns computed by the database
+     * @param list<string>     $generatedColumns names of the columns computed by the database
+     * @param list<Index>|null $indexes          indexes read from the database, without the ones DBAL adds
+     *                                           to the table for its unindexed foreign keys
      */
-    public function create(Table $table, array $generatedColumns = []): TableMetadata
+    public function create(Table $table, array $generatedColumns = [], ?array $indexes = null): TableMetadata
     {
         $comment = $table->getComment();
         $primaryKey = $this->names($table->getPrimaryKeyConstraint()?->getColumnNames() ?? []);
@@ -34,7 +36,7 @@ final class TableMetadataFactory
             $table->getObjectName()->getUnqualifiedName()->getValue(),
             array_values(array_map(fn (Column $column): ColumnMetadata => $this->column($column, $generatedColumns), $table->getColumns())),
             $primaryKey,
-            $this->indexes($table, $primaryKey),
+            $this->indexes($indexes ?? array_values($table->getIndexes()), $primaryKey),
             array_values(array_map($this->foreignKey(...), $table->getForeignKeys())),
             null === $comment || '' === $comment ? null : $comment,
         );
@@ -69,11 +71,12 @@ final class TableMetadataFactory
     }
 
     /**
+     * @param list<Index>  $tableIndexes
      * @param list<string> $primaryKey
      *
      * @return list<IndexMetadata>
      */
-    private function indexes(Table $table, array $primaryKey): array
+    private function indexes(array $tableIndexes, array $primaryKey): array
     {
         $indexes = array_map(
             static fn (Index $index): IndexMetadata => new IndexMetadata(
@@ -89,7 +92,7 @@ final class TableMetadataFactory
                     default => [],
                 },
             ),
-            array_values($table->getIndexes()),
+            $tableIndexes,
         );
         // DBAL also lists the index backing the primary key: it is already described by the primary key.
         $indexes = array_filter(

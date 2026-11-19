@@ -106,6 +106,21 @@ final class RoundTripTest extends DatabaseTestCase
         $this->assertNoDifference($this->diff($connection, $entityDirectory));
     }
 
+    #[Test]
+    #[DataProvider('mySqlPlatforms')]
+    public function it_regenerates_a_derived_identity_created_in_sql_on_mysql(string $platform): void
+    {
+        $connection = $this->connect($platform);
+        // As in Sakila: actor_id is only indexed by the primary key, film_id by the index MySQL creates for its foreign key.
+        $connection->executeStatement('CREATE TABLE actor (actor_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY)');
+        $connection->executeStatement('CREATE TABLE film (film_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY)');
+        $connection->executeStatement('CREATE TABLE film_actor (actor_id INT NOT NULL, film_id INT NOT NULL, last_update TIMESTAMP NOT NULL, PRIMARY KEY (actor_id, film_id), KEY idx_fk_film_id (film_id), CONSTRAINT fk_film_actor_actor FOREIGN KEY (actor_id) REFERENCES actor (actor_id), CONSTRAINT fk_film_actor_film FOREIGN KEY (film_id) REFERENCES film (film_id))');
+
+        [, $entityDirectory] = $this->generateEntities($connection, $platform);
+
+        $this->assertNoDifference($this->diff($connection, $entityDirectory));
+    }
+
     private function diff(Connection $connection, string $entityDirectory): SchemaDiff
     {
         $entityManager = DoctrineTestConfiguration::entityManager($connection, $entityDirectory);

@@ -147,6 +147,28 @@ final class DbalSchemaReaderTest extends DatabaseTestCase
         );
     }
 
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function platformsThatDoNotIndexForeignKeys(): iterable
+    {
+        yield 'sqlite' => ['sqlite'];
+        yield 'postgresql' => ['postgresql'];
+    }
+
+    #[Test]
+    #[DataProvider('platformsThatDoNotIndexForeignKeys')]
+    public function it_reads_no_index_for_an_unindexed_foreign_key(string $platform): void
+    {
+        $connection = $this->connect($platform);
+        $connection->executeStatement('CREATE TABLE post (id INT NOT NULL PRIMARY KEY)');
+        $connection->executeStatement('CREATE TABLE comment (id INT NOT NULL PRIMARY KEY, post_id INT NOT NULL REFERENCES post (id))');
+
+        $comment = $this->table((new DbalSchemaReader($connection))->read(new TableFilter()), 'comment');
+
+        self::assertSame([], $comment->indexes);
+    }
+
     #[Test]
     #[DataProvider('allPlatforms')]
     public function it_reads_foreign_keys_with_their_target_and_on_delete_action(string $platform): void

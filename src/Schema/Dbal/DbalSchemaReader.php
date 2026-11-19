@@ -51,7 +51,8 @@ final readonly class DbalSchemaReader implements SchemaReaderInterface
             }
 
             try {
-                $table = $this->tableFactory->create($schemaManager->introspectTableByQuotedName($name), $generatedColumns[$name] ?? []);
+                // The indexes are read apart: the table adds one for each unindexed foreign key, which the database lacks.
+                $table = $this->tableFactory->create($schemaManager->introspectTableByQuotedName($name), $generatedColumns[$name] ?? [], $schemaManager->introspectTableIndexesByQuotedName($name));
             } catch (DbalException $dbalException) {
                 $diagnostics[] = $this->unreadable($name, $dbalException);
 

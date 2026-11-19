@@ -7,6 +7,7 @@ namespace Juf\DoctrineImportBundle\Tests\Integration\Schema\Fixture;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint;
+use Doctrine\DBAL\Schema\Index;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
@@ -27,6 +28,8 @@ final class DerivedIdentitySchemaFixture
             [self::integer('film_id'), self::integer('actor_id'), Column::editor()->setUnquotedName('last_update')->setTypeName(Types::DATETIME_IMMUTABLE)->create()],
             ['actor_id', 'film_id'],
             [self::foreignKey('fk_film_actor_film', 'film_id', 'film'), self::foreignKey('fk_film_actor_actor', 'actor_id', 'actor')],
+            // As in Sakila: the second key column has its own named index, the first one is covered by the primary key.
+            [Index::editor()->setUnquotedName('idx_fk_film_id')->setUnquotedColumnNames('film_id')->create()],
         ));
         $schemaManager->createTable(self::table(
             'order_item',
@@ -42,14 +45,16 @@ final class DerivedIdentitySchemaFixture
      * @param list<Column>                     $columns
      * @param non-empty-list<non-empty-string> $primaryKey
      * @param list<ForeignKeyConstraint>       $foreignKeys
+     * @param list<Index>                      $indexes
      */
-    private static function table(string $name, array $columns, array $primaryKey, array $foreignKeys = []): Table
+    private static function table(string $name, array $columns, array $primaryKey, array $foreignKeys = [], array $indexes = []): Table
     {
         return Table::editor()
             ->setUnquotedName($name)
             ->setColumns(...$columns)
             ->setPrimaryKeyConstraint(PrimaryKeyConstraint::editor()->setUnquotedColumnNames(...$primaryKey)->create())
             ->setForeignKeyConstraints(...$foreignKeys)
+            ->setIndexes(...$indexes)
             ->create();
     }
 
