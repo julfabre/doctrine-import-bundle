@@ -36,7 +36,8 @@ final readonly class ManyToManyAttributes
                 'name' => $column->name,
                 'referencedColumnName' => $column->referencedColumn,
                 'onDelete' => $column->onDelete,
-            ], static fn (?string $value): bool => null !== $value));
+                'options' => [] === $column->options ? null : $column->options,
+            ], static fn (mixed $value): bool => null !== $value));
         }
     }
 }

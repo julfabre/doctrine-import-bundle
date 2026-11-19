@@ -35,6 +35,16 @@ All notable changes to this project are documented in this file. The format foll
 - The properties of a composite identifier are declared in primary key order, not in column order: Doctrine
   builds the primary key in declaration order, so `doctrine:schema:update` recreated a primary key whose columns
   were in another order.
+- A join column referencing a PostgreSQL `SERIAL` primary key resets the `nextval()` default that Doctrine copies
+  from the referenced column (`options: ['default' => null]`): since 0.1.1, `doctrine:schema:update` added that
+  default to every foreign key column.
+- The indexes that Doctrine DBAL adds in memory for an unindexed foreign key are no longer read as indexes of the
+  table: entities got invented `#[ORM\Index(name: 'IDX_…')]` attributes, and with a derived identity, such as
+  Sakila `film_actor`, `doctrine:schema:update` renamed an index.
+- A SQLite `INTEGER PRIMARY KEY` without the `AUTOINCREMENT` keyword is mapped as an identity: `persist()` failed
+  with `EntityMissingAssignedId`, although SQLite numbers the rowid itself.
+- PostgreSQL partitions are skipped with an info (`table.partition`) instead of an unreadable table error, and the
+  `doctrine.dbal.mapping_types` advice of `table.unreadable` is only given for an unknown column type.
 
 ## [0.1.1] - 2026-11-16
 

@@ -103,6 +103,19 @@ final class ManyToManyAnalysisTest extends TestCase
     }
 
     #[Test]
+    public function it_resets_on_the_join_columns_the_default_of_the_columns_they_reference(): void
+    {
+        $model = $this->analyze(
+            SchemaBuilder::table('post', [SchemaBuilder::column('id', default: "nextval('post_id_seq'::regclass)")]),
+            SchemaBuilder::table('tag', [SchemaBuilder::column('id', default: "nextval('tag_id_seq'::regclass)")]),
+            $this->joinTable('post_tag', 'post', 'tag'),
+        );
+
+        $joinTable = (self::entity($model, 'Post')->manyToMany[0] ?? null)?->joinTable;
+        self::assertSame([['default' => null], ['default' => null]], [$joinTable?->joinColumn->options, $joinTable?->inverseJoinColumn->options]);
+    }
+
+    #[Test]
     public function it_does_not_generate_an_entity_for_a_join_table(): void
     {
         $model = $this->analyze($this->post(), $this->tag(), $this->joinTable('post_tag', 'post', 'tag'));

@@ -58,6 +58,7 @@ final readonly class AttributeMappingStrategy implements MappingStrategyInterfac
                 'referencedColumnName' => $association->referencedColumn,
                 'nullable' => $association->nullable,
                 'onDelete' => $association->onDelete,
+                'options' => $association->joinColumnOptions,
             ]);
         }
 
@@ -67,6 +68,7 @@ final readonly class AttributeMappingStrategy implements MappingStrategyInterfac
                 'referencedColumnName' => $association->referencedColumn,
                 'nullable' => $association->nullable,
                 'onDelete' => $association->onDelete,
+                'options' => $association->joinColumnOptions,
             ]);
         }
 
@@ -162,7 +164,7 @@ final readonly class AttributeMappingStrategy implements MappingStrategyInterfac
             'targetEntity' => new Literal($targetEntity.'::class'),
             'inversedBy' => $inversedBy,
         ]));
-        $property->addAttribute(self::ORM.'\JoinColumn', self::withoutNulls($joinColumn));
+        $property->addAttribute(self::ORM.'\JoinColumn', array_filter($joinColumn, static fn (mixed $value): bool => null !== $value && [] !== $value));
     }
 
     private static function mapOneToMany(ClassType $class, OneToManyDefinition $collection): void

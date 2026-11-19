@@ -10,7 +10,10 @@ use Juf\DoctrineImportBundle\Schema\ColumnMetadata;
 use Juf\DoctrineImportBundle\Schema\ColumnType;
 use Juf\DoctrineImportBundle\Schema\Dbal\DbalSchemaReader;
 use Juf\DoctrineImportBundle\Schema\Dbal\GeneratedColumnsReader;
+use Juf\DoctrineImportBundle\Schema\Dbal\PartitionReader;
 use Juf\DoctrineImportBundle\Schema\Dbal\PlatformNameResolver;
+use Juf\DoctrineImportBundle\Schema\Dbal\RowidAliasReader;
+use Juf\DoctrineImportBundle\Schema\Dbal\SchemaReadingDiagnostics;
 use Juf\DoctrineImportBundle\Schema\Dbal\TableMetadataFactory;
 use Juf\DoctrineImportBundle\Schema\IndexMetadata;
 use Juf\DoctrineImportBundle\Schema\SchemaMetadata;
@@ -31,6 +34,9 @@ use PHPUnit\Framework\Attributes\UsesClass;
 #[UsesClass(TableFilter::class)]
 #[CoversClass(Diagnostic::class)]
 #[CoversClass(GeneratedColumnsReader::class)]
+#[CoversClass(PartitionReader::class)]
+#[CoversClass(RowidAliasReader::class)]
+#[CoversClass(SchemaReadingDiagnostics::class)]
 final class PostgreSqlSchemaReaderTest extends DatabaseTestCase
 {
     #[Test]
@@ -82,6 +88,20 @@ final class PostgreSqlSchemaReaderTest extends DatabaseTestCase
         $table = (new DbalSchemaReader($connection))->read(new TableFilter())->tables[0] ?? self::fail('Table "product" was not read.');
 
         self::assertSame(['id' => false, 'name' => false], self::generatedFlags($table));
+    }
+
+    #[Test]
+    public function it_skips_the_partitions_of_a_partitioned_table_with_an_info(): void
+    {
+        $connection = $this->connect('postgresql');
+        $connection->executeStatement('CREATE TABLE measure (id INT NOT NULL, taken_on DATE NOT NULL, PRIMARY KEY (id, taken_on)) PARTITION BY RANGE (taken_on)');
+        $connection->executeStatement("CREATE TABLE measure_2026 PARTITION OF measure FOR VALUES FROM ('2026-01-01') TO ('2027-01-01')");
+
+        $schema = (new DbalSchemaReader($connection))->read(new TableFilter());
+
+        self::assertSame(['measure'], array_map(static fn (TableMetadata $table): string => $table->name, $schema->tables));
+        self::assertSame([['info', 'table.partition', 'measure_2026']], array_map(static fn (Diagnostic $diagnostic): array => [$diagnostic->severity->value, $diagnostic->code, $diagnostic->table], $schema->diagnostics));
+        self::assertSame('Table "measure_2026" is a partition: its rows are mapped through the partitioned table.', $schema->diagnostics[0]->message ?? null);
     }
 
     #[Test]

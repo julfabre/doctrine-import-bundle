@@ -189,6 +189,16 @@ final class AttributeMappingStrategyTest extends TestCase
     }
 
     #[Test]
+    public function it_renders_the_column_options_of_a_join_column(): void
+    {
+        $code = $this->render(DefinitionBuilder::entity('Address', manyToOne: [
+            new ManyToOneDefinition('city', 'City', 'city_id', 'id', false, null, null, ['default' => null]),
+        ]));
+
+        self::assertStringContainsString("    #[ORM\\JoinColumn(name: 'city_id', referencedColumnName: 'id', nullable: false, options: ['default' => null])]\n", $code);
+    }
+
+    #[Test]
     public function it_renders_assigned_and_composite_ids_with_setters(): void
     {
         $code = $this->render(DefinitionBuilder::entity('OrderLine', [

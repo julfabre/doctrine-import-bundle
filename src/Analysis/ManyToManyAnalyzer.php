@@ -76,7 +76,7 @@ final readonly class ManyToManyAnalyzer
         $owningSide = $owning->withManyToMany([...$owning->manyToMany, new ManyToManyDefinition(
             $owningName,
             $inverse->className,
-            new JoinTableDefinition($joinTable->name, $this->joinColumn($owningKey), $this->joinColumn($inverseKey)),
+            new JoinTableDefinition($joinTable->name, $this->joinColumn($owningKey, $owning), $this->joinColumn($inverseKey, $inverse)),
             $inverseName,
             null,
         )]);
@@ -113,8 +113,13 @@ final readonly class ManyToManyAnalyzer
         return $fallback;
     }
 
-    private function joinColumn(ForeignKeyMetadata $foreignKey): JoinColumnDefinition
+    private function joinColumn(ForeignKeyMetadata $foreignKey, EntityDefinition $target): JoinColumnDefinition
     {
-        return new JoinColumnDefinition($foreignKey->localColumns[0], $foreignKey->foreignColumns[0], 'NO ACTION' === $foreignKey->onDelete ? null : $foreignKey->onDelete);
+        return new JoinColumnDefinition(
+            $foreignKey->localColumns[0],
+            $foreignKey->foreignColumns[0],
+            'NO ACTION' === $foreignKey->onDelete ? null : $foreignKey->onDelete,
+            $target->joinColumnOptions($foreignKey->foreignColumns[0]),
+        );
     }
 }

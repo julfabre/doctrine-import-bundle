@@ -9,7 +9,10 @@ use Juf\DoctrineImportBundle\Schema\ColumnMetadata;
 use Juf\DoctrineImportBundle\Schema\ColumnType;
 use Juf\DoctrineImportBundle\Schema\Dbal\DbalSchemaReader;
 use Juf\DoctrineImportBundle\Schema\Dbal\GeneratedColumnsReader;
+use Juf\DoctrineImportBundle\Schema\Dbal\PartitionReader;
 use Juf\DoctrineImportBundle\Schema\Dbal\PlatformNameResolver;
+use Juf\DoctrineImportBundle\Schema\Dbal\RowidAliasReader;
+use Juf\DoctrineImportBundle\Schema\Dbal\SchemaReadingDiagnostics;
 use Juf\DoctrineImportBundle\Schema\Dbal\TableMetadataFactory;
 use Juf\DoctrineImportBundle\Schema\ForeignKeyMetadata;
 use Juf\DoctrineImportBundle\Schema\IndexMetadata;
@@ -33,6 +36,9 @@ use PHPUnit\Framework\Attributes\UsesClass;
 #[CoversClass(ForeignKeyMetadata::class)]
 #[UsesClass(TableFilter::class)]
 #[UsesClass(GeneratedColumnsReader::class)]
+#[UsesClass(PartitionReader::class)]
+#[UsesClass(RowidAliasReader::class)]
+#[UsesClass(SchemaReadingDiagnostics::class)]
 final class DbalSchemaReaderTest extends DatabaseTestCase
 {
     #[Test]
@@ -145,6 +151,28 @@ final class DbalSchemaReaderTest extends DatabaseTestCase
             [new IndexMetadata('idx_post_author', ['author_id'], unique: false)],
             $this->table($schema, 'post')->indexes,
         );
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function platformsThatDoNotIndexForeignKeys(): iterable
+    {
+        yield 'sqlite' => ['sqlite'];
+        yield 'postgresql' => ['postgresql'];
+    }
+
+    #[Test]
+    #[DataProvider('platformsThatDoNotIndexForeignKeys')]
+    public function it_reads_no_index_for_an_unindexed_foreign_key(string $platform): void
+    {
+        $connection = $this->connect($platform);
+        $connection->executeStatement('CREATE TABLE post (id INT NOT NULL PRIMARY KEY)');
+        $connection->executeStatement('CREATE TABLE comment (id INT NOT NULL PRIMARY KEY, post_id INT NOT NULL REFERENCES post (id))');
+
+        $comment = $this->table((new DbalSchemaReader($connection))->read(new TableFilter()), 'comment');
+
+        self::assertSame([], $comment->indexes);
     }
 
     #[Test]
