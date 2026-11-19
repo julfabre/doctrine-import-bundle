@@ -2,7 +2,8 @@
 
 Generate Doctrine ORM entities and repositories from an existing database.
 
-> The bundle is under active development. The first usable release will be `0.1.0`.
+> The bundle is under active development: until `1.0`, a minor version may break compatibility. See the
+> [changelog](../CHANGELOG.md) before upgrading.
 
 ## Requirements
 
