@@ -290,6 +290,34 @@ final class RelationAnalyzerTest extends TestCase
     }
 
     #[Test]
+    public function it_resets_on_a_join_column_the_default_of_the_column_it_references(): void
+    {
+        $model = $this->analyze($this->serialCity(), SchemaBuilder::table('address', [SchemaBuilder::id(), SchemaBuilder::column('city_id')], foreignKeys: [
+            SchemaBuilder::foreignKey(['city_id'], 'city'),
+        ]));
+
+        self::assertSame(['default' => null], self::onlyManyToOne(self::entity($model, 'Address'))->joinColumnOptions);
+    }
+
+    #[Test]
+    public function it_resets_on_a_one_to_one_join_column_the_default_of_the_column_it_references(): void
+    {
+        $model = $this->analyze($this->serialCity(), SchemaBuilder::table('mayor', [SchemaBuilder::id(), SchemaBuilder::column('city_id')], foreignKeys: [
+            SchemaBuilder::foreignKey(['city_id'], 'city'),
+        ], indexes: [new IndexMetadata('uniq_mayor_city', ['city_id'], unique: true)]));
+
+        self::assertSame(['default' => null], (self::entity($model, 'Mayor')->oneToOne[0] ?? null)?->joinColumnOptions);
+    }
+
+    #[Test]
+    public function it_keeps_no_join_column_option_when_the_referenced_column_has_no_default(): void
+    {
+        $model = $this->analyze($this->author(), $this->post());
+
+        self::assertSame([], self::onlyManyToOne(self::entity($model, 'Post'))->joinColumnOptions);
+    }
+
+    #[Test]
     public function it_keeps_a_primary_key_column_as_id_when_it_is_also_a_foreign_key(): void
     {
         $model = $this->analyze(SchemaBuilder::table('order', [SchemaBuilder::id()]), SchemaBuilder::table('order_detail', [SchemaBuilder::column('order_id'), SchemaBuilder::column('note', 'text')], primaryKey: ['order_id'], foreignKeys: [
@@ -448,6 +476,14 @@ final class RelationAnalyzerTest extends TestCase
             SchemaBuilder::foreignKey(['film_id'], 'film'),
             SchemaBuilder::foreignKey(['actor_id'], 'actor'),
         ], indexes: $indexes);
+    }
+
+    /**
+     * The ORM copies the definition of a referenced column, default included, onto every join column.
+     */
+    private function serialCity(): TableMetadata
+    {
+        return SchemaBuilder::table('city', [SchemaBuilder::column('id', default: "nextval('city_id_seq'::regclass)")]);
     }
 
     private function post(): TableMetadata

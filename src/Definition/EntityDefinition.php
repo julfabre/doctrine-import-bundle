@@ -74,4 +74,21 @@ final readonly class EntityDefinition
             $this->primaryKey,
         );
     }
+
+    /**
+     * The ORM copies the definition of a referenced column, default included, onto every join column: a foreign key
+     * to a SERIAL primary key would get its nextval() default. A join column referencing such a column resets it.
+     *
+     * @return array<string, mixed> column options of a join column referencing the column
+     */
+    public function joinColumnOptions(string $referencedColumn): array
+    {
+        foreach ($this->fields as $field) {
+            if ($referencedColumn === $field->columnName && null !== $field->options->default) {
+                return ['default' => null];
+            }
+        }
+
+        return [];
+    }
 }

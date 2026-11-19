@@ -74,6 +74,20 @@ final class ManyToManyRenderingTest extends TestCase
     }
 
     #[Test]
+    public function it_renders_the_column_options_of_the_join_columns(): void
+    {
+        $code = $this->render(DefinitionBuilder::entity('Post', manyToMany: [new ManyToManyDefinition(
+            'tags',
+            'Tag',
+            new JoinTableDefinition('post_tag', new JoinColumnDefinition('post_id', 'id', null, ['default' => null]), new JoinColumnDefinition('tag_id', 'id', null, ['default' => null])),
+            null,
+            null,
+        )]));
+
+        self::assertStringContainsString("    #[ORM\\JoinColumn(name: 'post_id', referencedColumnName: 'id', options: ['default' => null])]\n    #[ORM\\InverseJoinColumn(name: 'tag_id', referencedColumnName: 'id', options: ['default' => null])]\n", $code);
+    }
+
+    #[Test]
     public function it_initializes_many_to_many_collections_in_the_constructor(): void
     {
         $code = $this->render(DefinitionBuilder::entity('Post', manyToMany: [$this->owningSide()]));

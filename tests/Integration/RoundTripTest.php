@@ -107,6 +107,22 @@ final class RoundTripTest extends DatabaseTestCase
     }
 
     #[Test]
+    public function it_regenerates_foreign_keys_to_serial_primary_keys_on_postgresql(): void
+    {
+        $connection = $this->connect('postgresql');
+        $connection->executeStatement('CREATE TABLE city (id SERIAL PRIMARY KEY, name TEXT NOT NULL)');
+        $connection->executeStatement('CREATE TABLE address (id SERIAL PRIMARY KEY, city_id INT NOT NULL REFERENCES city (id))');
+        $connection->executeStatement('CREATE INDEX idx_address_city ON address (city_id)');
+        $connection->executeStatement('CREATE TABLE mayor (id SERIAL PRIMARY KEY, city_id INT NOT NULL UNIQUE REFERENCES city (id))');
+        $connection->executeStatement('CREATE TABLE tag (id SERIAL PRIMARY KEY)');
+        $connection->executeStatement('CREATE TABLE address_tag (address_id INT NOT NULL REFERENCES address (id), tag_id INT NOT NULL REFERENCES tag (id), PRIMARY KEY (address_id, tag_id))');
+
+        [, $entityDirectory] = $this->generateEntities($connection, 'postgresql');
+
+        $this->assertNoDifference($this->diff($connection, $entityDirectory));
+    }
+
+    #[Test]
     #[DataProvider('mySqlPlatforms')]
     public function it_regenerates_a_derived_identity_created_in_sql_on_mysql(string $platform): void
     {

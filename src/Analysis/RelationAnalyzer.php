@@ -82,9 +82,10 @@ final readonly class RelationAnalyzer
         [$referencedColumn] = $foreignKey->foreignColumns;
         $nullable = $this->isNullable($table, $column);
         $onDelete = 'NO ACTION' === $foreignKey->onDelete ? null : $foreignKey->onDelete;
+        $options = $target->joinColumnOptions($referencedColumn);
 
         if ($isOneToOne) {
-            $relations->addOneToOne($table->name, new OneToOneDefinition($propertyName, $target->className, $column, $referencedColumn, $nullable, $onDelete));
+            $relations->addOneToOne($table->name, new OneToOneDefinition($propertyName, $target->className, $column, $referencedColumn, $nullable, $onDelete, $options));
 
             return;
         }
@@ -92,7 +93,7 @@ final readonly class RelationAnalyzer
         $inversedBy = $this->inverseName($table, $entity, $propertyName, $foreignKey->foreignTable);
         $relations->add(
             $table->name,
-            new ManyToOneDefinition($propertyName, $target->className, $column, $referencedColumn, $nullable, $onDelete, $inversedBy),
+            new ManyToOneDefinition($propertyName, $target->className, $column, $referencedColumn, $nullable, $onDelete, $inversedBy, $options),
             $foreignKey->foreignTable,
             new OneToManyDefinition($inversedBy, $entity->className, $propertyName),
         );
