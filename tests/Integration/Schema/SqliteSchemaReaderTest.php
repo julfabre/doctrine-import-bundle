@@ -9,8 +9,10 @@ use Juf\DoctrineImportBundle\Schema\ColumnMetadata;
 use Juf\DoctrineImportBundle\Schema\ColumnType;
 use Juf\DoctrineImportBundle\Schema\Dbal\DbalSchemaReader;
 use Juf\DoctrineImportBundle\Schema\Dbal\GeneratedColumnsReader;
+use Juf\DoctrineImportBundle\Schema\Dbal\PartitionReader;
 use Juf\DoctrineImportBundle\Schema\Dbal\PlatformNameResolver;
 use Juf\DoctrineImportBundle\Schema\Dbal\RowidAliasReader;
+use Juf\DoctrineImportBundle\Schema\Dbal\SchemaReadingDiagnostics;
 use Juf\DoctrineImportBundle\Schema\Dbal\TableMetadataFactory;
 use Juf\DoctrineImportBundle\Schema\ForeignKeyMetadata;
 use Juf\DoctrineImportBundle\Schema\IndexMetadata;
@@ -33,7 +35,9 @@ use PHPUnit\Framework\Attributes\UsesClass;
 #[UsesClass(TableFilter::class)]
 #[UsesClass(Diagnostic::class)]
 #[CoversClass(GeneratedColumnsReader::class)]
+#[CoversClass(PartitionReader::class)]
 #[CoversClass(RowidAliasReader::class)]
+#[CoversClass(SchemaReadingDiagnostics::class)]
 final class SqliteSchemaReaderTest extends DatabaseTestCase
 {
     #[Test]

@@ -49,8 +49,10 @@ use Juf\DoctrineImportBundle\Schema\ColumnMetadata;
 use Juf\DoctrineImportBundle\Schema\ColumnType;
 use Juf\DoctrineImportBundle\Schema\Dbal\DbalSchemaReader;
 use Juf\DoctrineImportBundle\Schema\Dbal\GeneratedColumnsReader;
+use Juf\DoctrineImportBundle\Schema\Dbal\PartitionReader;
 use Juf\DoctrineImportBundle\Schema\Dbal\PlatformNameResolver;
 use Juf\DoctrineImportBundle\Schema\Dbal\RowidAliasReader;
+use Juf\DoctrineImportBundle\Schema\Dbal\SchemaReadingDiagnostics;
 use Juf\DoctrineImportBundle\Schema\Dbal\TableMetadataFactory;
 use Juf\DoctrineImportBundle\Schema\ForeignKeyMetadata;
 use Juf\DoctrineImportBundle\Schema\IndexMetadata;
@@ -122,7 +124,9 @@ use Symfony\Component\HttpKernel\KernelInterface;
 #[UsesClass(WriteOptions::class)]
 #[UsesClass(WrittenFile::class)]
 #[UsesClass(GeneratedColumnsReader::class)]
+#[UsesClass(PartitionReader::class)]
 #[UsesClass(RowidAliasReader::class)]
+#[UsesClass(SchemaReadingDiagnostics::class)]
 #[UsesClass(EnumAnalyzer::class)]
 #[UsesClass(JoinTableDetector::class)]
 #[UsesClass(ManyToManyAnalyzer::class)]
