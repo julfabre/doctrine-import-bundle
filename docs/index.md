@@ -107,7 +107,11 @@ juf_doctrine_import:
   `generated: 'ALWAYS'` so that Doctrine reads the computed value back after each write, and no setter.
 - A PostgreSQL `SERIAL` primary key (default `nextval('product_id_seq'::regclass)`) keeps using its sequence:
   `GeneratedValue(strategy: 'SEQUENCE')` with `allocationSize: 1`, and the default stays mapped so that
-  other clients of the database keep inserting through it.
+  other clients of the database keep inserting through it. Doctrine copies the definition of a referenced
+  column, default included, onto its join columns: a join column referencing such a key resets it
+  (`options: ['default' => null]`), so that the foreign key column gets no `nextval()` default.
+- A SQLite `INTEGER PRIMARY KEY` aliases the rowid, which SQLite numbers itself: it is mapped as an identity
+  (`GeneratedValue`), with or without the `AUTOINCREMENT` keyword.
 - The code runs on PHP 8.2.
 
 ## Diagnostics
@@ -117,7 +121,7 @@ guessed code.
 
 | Code | Severity | Meaning |
 |---|---|---|
-| `table.unreadable` | error | A column type is unknown to Doctrine DBAL (geometry, PostgreSQL enum…): the table is skipped. Map the type with `doctrine.dbal.mapping_types`, or exclude the table |
+| `table.unreadable` | error | Doctrine DBAL cannot read the table: the table is skipped. When a column type is unknown to Doctrine DBAL (geometry, PostgreSQL enum…), map the type with `doctrine.dbal.mapping_types`, or exclude the table |
 | `table.no_primary_key` | error | Doctrine needs an identifier: the table is skipped |
 | `naming.invalid_identifier` | error | Name with characters other than `[A-Za-z0-9_]`: the table is skipped |
 | `column.unsupported_type` | error | Type unknown to the bundle: the column is skipped |
@@ -132,6 +136,7 @@ guessed code.
 | `relation.foreign_key_in_primary_key` | warning | Foreign key forming the whole primary key (a `OneToOne` sharing its primary key), not mapped as an association yet |
 | `relation.missing_target` | warning | Foreign key to a table that is not generated |
 | `table.outside_search_path` | warning | PostgreSQL table outside the default schema, not read |
+| `table.partition` | info | PostgreSQL partition: its rows are mapped through the partitioned table, it is not generated |
 | `table.composite_primary_key` | info | Supported, but Doctrine advises against it |
 | `relation.one_to_one_without_inverse_side` | info | Unique foreign key mapped as an owning `OneToOne`, without inverse side |
 | `relation.many_to_many` | info | Join table mapped as a `ManyToMany` association |
@@ -165,6 +170,7 @@ guessed code.
 - **Charsets and collations** of columns are not mapped.
 - **MySQL `YEAR`** is read by Doctrine DBAL as a `date` column: map or exclude it before generating.
 - **Views** are not generated.
+- **PostgreSQL partitions** are not generated: the partitioned table is (`table.partition`).
 - **Mapping formats**: attributes only. XML is planned.
 
 ## Contributing
